@@ -23,7 +23,7 @@ std::string AI::get_name() const
 {
     // <<-- Creer-Merge: get-name -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // REPLACE WITH YOUR TEAM NAME!
-    return "Catastrophe C++ Player";
+    return "Arrays Start at Zero";
     // <<-- /Creer-Merge: get-name -->>
 }
 
