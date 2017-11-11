@@ -6,7 +6,7 @@
 // <<-- Creer-Merge: includes -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
 // You can add #includes here for your AI.
 // <<-- /Creer-Merge: includes -->>
-
+using std::cout;
 
 namespace cpp_client
 {
@@ -34,6 +34,7 @@ void AI::start()
 {
     // <<-- Creer-Merge: start -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // This is a good place to initialize any variables
+	cout << "Game start.\n";
     // <<-- /Creer-Merge: start -->>
 }
 
@@ -56,6 +57,7 @@ void AI::ended(bool won, const std::string& reason)
 {
     //<<-- Creer-Merge: ended -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // You can do any cleanup of your AI here.  The program ends when this function returns.
+	cout << "Game end.\n";
     //<<-- /Creer-Merge: ended -->>
 }
 
@@ -67,6 +69,9 @@ bool AI::run_turn()
 {
     // <<-- Creer-Merge: runTurn -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // Put your game logic here for run_turn here
+	cout << "Running turn.\n";
+	
+	cout << "Ending turn.\n";
     // <<-- /Creer-Merge: runTurn -->>
     return true;
 }
