@@ -35,6 +35,25 @@ void AI::start()
     // <<-- Creer-Merge: start -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // This is a good place to initialize any variables
 	cout << "Game start.\n";
+
+	auto player_units = player->units;
+
+	//guaranteed to have three
+	if (player_units[0]->change_job("missionary"))
+		cout << "missionary is the Correct Name.\n";
+	if (player_units[0]->change_job("Missionary"))
+		cout << "Missionary is the Correct Name.\n";
+
+	if (player_units[1]->change_job("builder"))
+		cout << "builder is the Correct Name.\n";
+	if (player_units[1]->change_job("Builder"))
+		cout << "Builder is the Correct Name.\n";
+
+	if (player_units[2]->change_job("soldier"))
+		cout << "soldier is the Correct Name.\n";
+	if (player_units[2]->change_job("Soldier"))
+		cout << "Soldier is the Correct Name.\n";
+
     // <<-- /Creer-Merge: start -->>
 }
 
@@ -72,7 +91,7 @@ bool AI::run_turn()
 	cout << "Running turn.\n";
 
 	//grab all units
-	auto player_units = player.units;
+	auto player_units = player->units;
 
 	for (auto unit : player_units)
 	{
@@ -165,6 +184,50 @@ std::vector<Tile> AI::find_path(const Tile& start, const Tile& goal)
 //<<-- Creer-Merge: methods -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
 // You can add additional methods here for your AI to call
 //<<-- /Creer-Merge: methods -->>
+
+void AI::warrior_turn(const Unit& unit)
+{
+	auto opponents = player->opponent->units;
+	std::vector<Tile> choices;
+	std::vector<std::vector<Tile>> paths;
+	Tile attack;
+
+	for (auto opponent : opponents) //iterate through opponents
+	{
+		choices.push_back(opponent->tile);
+	}
+
+	for (auto destination : choices) //iterate through tiles
+	{
+		paths.push_back(find_path(unit->tile, destination));
+	}
+
+	if (paths.empty()) //if there is nothing
+		return;
+
+	auto enemy_path = paths[0];
+
+	for (auto path : paths)
+	{
+		if (enemy_path.size() > path.size())
+			enemy_path = path;
+	}
+
+	auto enemy = enemy_path.back();
+
+	while (unit->moves > 0)
+	{
+		if (unit->attack(enemy)) //if we can attack, attack
+		{
+			//cool we just attacked
+		}
+		else //else attempt to move towards the enemy
+		{
+			auto loc = find_path(unit->tile, enemy);
+			unit->move(loc[0]);
+		}
+	}
+}
 
 } // catastrophe
 

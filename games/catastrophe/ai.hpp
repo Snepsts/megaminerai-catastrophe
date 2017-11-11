@@ -78,6 +78,9 @@ public:
     // You can add additional methods here.
     // <<-- /Creer-Merge: methods -->>
 
+	//warrior code
+	void warrior_turn(const Unit& unit);
+
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
 /// <param name="start">the starting Tile</param>
 /// <param name="goal">the goal Tile</param>
