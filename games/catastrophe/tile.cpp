@@ -69,7 +69,7 @@ bool Tile_::is_pathable()
 {
     // <<-- Creer-Merge: is_pathable_builtin -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
 	if (structure)
-		if ((structure->type != "road") && (structure->type != "shelter"))
+		if (structure->type != "road" && structure->type != "shelter")
 			return false;
 
 	if (unit)

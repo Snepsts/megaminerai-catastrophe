@@ -85,7 +85,6 @@ public:
 	std::vector<Tile> find_closest_neutral_human(const Unit& unitPosition);
 	std::vector<Tile> find_closest_soldier(const Unit& unitPosition);
 	bool converter_turn(Unit& converter);
-	void warrior_turn(const Unit& unit);
 	bool soldier_turn(Unit& unit);
 	std::vector<Tile> find_closest_enemy(const Unit& unit);
 	bool gatherer_turn(Unit& unit);
