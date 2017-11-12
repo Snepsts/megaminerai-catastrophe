@@ -387,6 +387,8 @@ bool AI::converter_turn(Unit& converter)
 		}
 		if(closestNeutralHuman.size() == 1){
 			converter->convert(closestNeutralHuman[0]);
+			Unit temp = game->get_tile_at(closestNeutralHuman[0]->x, closestNeutralHuman[0]->y)->unit;
+			fresh_turn(temp);
 		}
 		//converted an enemy so lets head towards a restpoint
 		std::vector<Tile> closestStructure = find_closest_shelter(converter);
