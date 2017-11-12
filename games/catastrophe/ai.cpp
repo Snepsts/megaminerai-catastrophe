@@ -122,7 +122,7 @@ bool AI::run_turn()
 		}
 	}
 
-	if (enemy_soldier_count < 1) {
+	if (enemy_soldier_count < 1 && game->current_turn >= 40) {
 		death_squad = true;
 	}
 
