@@ -533,9 +533,9 @@ std::vector<Tile> AI::find_closest_food(const Unit& unit)
 		return nodes_to_try;
 	}
 
-	int size = possible_paths[0].size();
-	int index = 0;
-	for(int i = 0; i < possible_paths.size(); ++i) {
+	unsigned size = possible_paths[0].size();
+	unsigned index = 0;
+	for(unsigned i = 0; i < possible_paths.size(); ++i) {
 		if(possible_paths[i].size() < size) {
 			size = possible_paths[i].size();
 			index = i;
