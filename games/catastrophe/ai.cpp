@@ -148,7 +148,8 @@ bool AI::run_turn()
 		}
 
 		bool is_protected = false;
-
+		std::cout << "Food is: " << player->food << std::endl;
+		std::cout << "Turn is: " << game->current_turn << std::endl;
 		for (auto unit : player_units) {
 			if (unit->job->title == "soldier" && soldier_count > 1 && !is_protected) {
 				defender = unit;
@@ -333,7 +334,7 @@ std::vector<Tile> AI::find_closest_soldier(const Unit& unit)
 bool AI::converter_turn(Unit& converter)
 {
 	if (converter->energy < 75.0) { //not enough energy so try to rest by moving to a rest point
-		std::cout << "Moving to rest, converter" << endl;
+		//std::cout << "Moving to rest, converter" << endl;
 		std::vector<Tile> closestStructure = find_closest_shelter(converter);
 
 		if (closestStructure.size() == 0) {
@@ -359,28 +360,28 @@ bool AI::converter_turn(Unit& converter)
 	//energy higher than 75 so lets try to convert a enemy
 	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(converter);
 	if (closestNeutralHuman.empty()) {
-		std::cout << "following soldier, converter turn" << endl;
+		//std::cout << "following soldier, converter turn" << endl;
 		// no neutral enemies
 		//so follow soilder instead
 		std::vector<Tile> soldierToFollow = find_closest_soldier(converter);
 		if (soldierToFollow.size() == 1) {
-			std::cout << "already at soldier" << endl;
+			//std::cout << "already at soldier" << endl;
 			//already at soldier
 			return true;
 		}
 		if ((soldierToFollow.size() > 1) && (converter->moves > 0)) { //move towards soldier
-			std::cout << "Try to move towards soldier" << endl;
+			//std::cout << "Try to move towards soldier" << endl;
 			while((soldierToFollow.size() > 1) && (converter->moves > 0)) {
 				mover(converter, soldierToFollow);
 				soldierToFollow = find_closest_soldier(converter);
 			}
-			std::cout << "At soilder, or moved as far as possible" << endl;
+			//std::cout << "At soilder, or moved as far as possible" << endl;
 			return true;
 		} else {
 			return false; //no soldier so what do we want to do?
 		}
 	} else { // neutral enemy to convert
-		std::cout << "Going to convert neutral human, converter turn" << endl;
+		//std::cout << "Going to convert neutral human, converter turn" << endl;
 		while((closestNeutralHuman.size() > 1) && (converter->moves > 0)) { //move to the neutralHumans
 			mover(converter, closestNeutralHuman);
 			closestNeutralHuman = find_closest_neutral_human(converter);
@@ -471,11 +472,11 @@ bool AI::soldier_turn(Unit& unit)
 		}
 
 		if (closestStructure.size() == 1) {
-			std::cout << "Soldier is resting" << endl;
+			//std::cout << "Soldier is resting" << endl;
 			unit->rest();
 			return true;
 		} else {
-			std::cout << "Moving to shelter, to rest soldier turn" << endl;
+			//std::cout << "Moving to shelter, to rest soldier turn" << endl;
 			while((closestStructure.size() > 1) && (unit->moves > 0)) {
 				mover(unit, closestStructure);
 				closestStructure = find_closest_shelter(unit);
@@ -487,7 +488,7 @@ bool AI::soldier_turn(Unit& unit)
 			return true;
 		}
 	} else {
-		std::cout << "Moving towards enemy, soldier turn" << endl;
+		//std::cout << "Moving towards enemy, soldier turn" << endl;
 		//have energy lets hunt for a enemy
 		std::vector<Tile> closestEnemy = find_closest_enemy(unit);
 
@@ -549,15 +550,17 @@ std::vector<Tile> AI::find_closest_food(const Unit& unit)
 bool AI::gatherer_turn(Unit& unit)
 {
 	//if storage is full or energy is low return and deposit food
-	std::cout << "Carrying " + unit->food;
+	int temp = unit->food;
+	std::cout << "Carrying " << temp << endl;
 	if ((unit->food >= unit->job->carry_limit) || (unit->energy < 75.0)) {
-		std::cout << "Goind to return materials" << endl;
+		//std::cout << "Goind to return materials" << endl;
 		std::vector<Tile> closestShelter = find_closest_shelter(unit);
 		while((closestShelter.size() > 1) && (unit->moves > 0)) {
 			mover(unit, closestShelter);
 			closestShelter = find_closest_shelter(unit);
 		}
 		if(closestShelter.size() == 1) { //if we are at the shelter
+			std::cout << "Dropping: " << unit->food << " food" << endl;
 			unit->drop(game->get_tile_at(closestShelter[0]->x, closestShelter[0]->y), "food");
 			if(unit->energy < 75.0) {//rest if we need to
 				unit->rest();
@@ -567,7 +570,7 @@ bool AI::gatherer_turn(Unit& unit)
 	}
 
 	//hunt for food to gather
-	std::cout<<"Hunting for food to gather" << endl;
+	//std::cout<<"Hunting for food to gather" << endl;
 	std::vector<Tile> foodSource = find_closest_food(unit);
 	while((foodSource.size() > 1) && (unit->moves > 0)) {
 		mover(unit, foodSource);
@@ -575,11 +578,11 @@ bool AI::gatherer_turn(Unit& unit)
 	}
 	if(foodSource.size() == 1) {//if we are at the food source
 		if(unit->acted){ //we cant act for whatever reason
-			std::cout << "I have already acted!" << endl;
+			//std::cout << "I have already acted!" << endl;
 			return true;
 		}
 		else{
-			std::cout<<"Harvesting!"<<endl;
+			//std::cout<<"Harvesting!"<<endl;
 			Tile temp = game->get_tile_at(foodSource[0]->x, foodSource[0]->y);
 			unit->harvest(temp);
 			if(unit->moves > 0) {//if we can lets start back towards the shelter
@@ -590,6 +593,7 @@ bool AI::gatherer_turn(Unit& unit)
 				}
 				if(closestShelter.size() == 1) {//we made it to a shelter
 					unit->drop(game->get_tile_at(closestShelter[0]->x, closestShelter[0]->y), "food");
+					std::cout << "Dropping: " << unit->food << " food" << endl;
 					unit->rest();
 				}
 				return true;
@@ -704,6 +708,7 @@ bool AI::builder_turn(Unit& unit){
 			}
 			if(closestEmptyTile.size() == 1){
 				unit->drop(game->get_tile_at(closestEmptyTile[0]->x, closestEmptyTile[0]->y), "material");
+				std::cout << "Dropping: " << unit->materials << " material" << endl;
 				if(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y)->materials >= 50){//if there is enoug materials to build then build
 					if(!unit->acted){
 						unit->construct(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y), "shelter");
@@ -723,6 +728,7 @@ bool AI::builder_turn(Unit& unit){
 			}
 			if(closestMaterialDeposit.size() == 1){//drop materials if we can
 				unit->drop(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y), "material");
+				std::cout << "Dropping: " << unit->materials << " food" << endl;
 				if(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y)->materials >= 50){//if there is enoug materials to build then build
 					if(!unit->acted){
 						unit->construct(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y), "shelter");
@@ -988,18 +994,18 @@ bool AI::death_squad_turn(Unit& unit)
 			std::vector<Tile> closestStructure = find_closest_shelter(unit);
 
 			if (closestStructure.size() == 0) {
-				std::cout << "Error, no shelter, soldier turn" << endl;
+				//std::cout << "Error, no shelter, soldier turn" << endl;
 				//No structure sooooo what do we want to do?
 				return false;
 			}
 
 			if (closestStructure.size() == 1) {
-				std::cout << "Soldier is resting" << endl;
+				//std::cout << "Soldier is resting" << endl;
 				unit->rest();
 				return true;
 			}
 			else {
-				std::cout << "Moving to shelter, to rest soldier turn" << endl;
+				//std::cout << "Moving to shelter, to rest soldier turn" << endl;
 				while((closestStructure.size() > 1) && (unit->moves > 0)) {
 					mover(unit, closestStructure);
 					closestStructure = find_closest_shelter(unit);
