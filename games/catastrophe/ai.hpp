@@ -91,6 +91,9 @@ public:
 	bool gatherer_turn(Unit& unit);
 	std::vector<Tile> find_closest_food(const Unit& unit);
 	void mover(Unit& unit, std::vector<Tile> path);
+	bool fresh_turn(Unit& unit);
+	bool can_change_job(Unit& unit);
+	bool choose_job(Unit& unit);
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
 /// <param name="start">the starting Tile</param>
 /// <param name="goal">the goal Tile</param>

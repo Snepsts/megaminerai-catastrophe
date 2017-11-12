@@ -135,6 +135,9 @@ bool AI::run_turn()
 		if(unit->job->title == "gatherer") {
 			gatherer_turn(unit);
 		}
+		if (unit->job->title == "fresh human") {
+			fresh_turn(unit);
+		}
 	}
 
 	cout << "Ending turn." << endl;
@@ -561,6 +564,63 @@ bool AI::gatherer_turn(Unit& unit)
 		}
 	}
 	return false; //something went wrong
+}
+
+bool AI::choose_job(Unit& unit)
+{
+	cout << "Choosing job." << endl;
+	auto player_units = player->units;
+	int builders = 0, soldiers = 0, missionaries = 0, gatherers = 0;
+
+	for (auto unit : player_units) {
+		if (unit->job->title == "builder")
+			builders++;
+		else if (unit->job->title == "soldier")
+			soldiers++;
+		else if (unit->job->title == "missionary")
+			missionaries++;
+		else if (unit->job->title == "gatherer")
+			gatherers++;
+	}
+
+	if (missionaries < 1 || missionaries < soldiers / 3) {
+		cout << "Choosing missionary" << endl;
+		return unit->change_job("missionary");
+	}
+	else if (gatherers < 2) {
+		cout << "Choosing gatherer" << endl;
+		return unit->change_job("gatherer");
+	}
+	else {
+		cout << "Choosing soldier" << endl;
+		return unit->change_job("soldier");
+	}
+
+	return false;
+}
+
+bool AI::fresh_turn(Unit& unit)
+{
+	if (can_change_job(unit)) {
+		return choose_job(unit);
+	}
+
+	auto cat_path = find_path(unit->tile, player->cat->tile);
+
+	while((cat_path.size() > 1) && (unit->moves > 0)) {
+		mover(unit, cat_path);
+		cat_path = find_path(unit->tile, player->cat->tile);
+	}
+
+	return true;
+}
+
+bool AI::can_change_job(Unit& unit)
+{
+	return (unit->tile->tile_north == player->cat->tile ||
+	    unit->tile->tile_south == player->cat->tile ||
+	    unit->tile->tile_west == player->cat->tile ||
+	    unit->tile->tile_east == player->cat->tile);
 }
 
 } // catastrophe
