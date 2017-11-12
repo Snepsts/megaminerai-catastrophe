@@ -823,24 +823,24 @@ bool AI::defender_turn(Unit& unit)
 	if (cat_attacker_path.size() > 0) { //if people are attacking our cat
 		while (cat_attacker_path.size() > 1 && unit->moves > 0) {
 			mover(unit, cat_attacker_path);
-			cat_attacker_path = find_path(unit->tile, player->cat->tile);
+			cat_attacker_path = find_closest_enemy_defender(unit);
 		}
-		if (cat_attacker_path.size() == 1 && unit->moves >0) {
-			unit->attack(cat_attacker_path[0]);
+		if (cat_attacker_path.size() == 1) {
+			if(!unit->acted)
+				unit->attack(cat_attacker_path[0]);
 		}
 	} else { //people are not attacking our cat
 		if (is_adj_to_cat(unit->tile)) {
 			if (unit->energy < 100) //try to rest
 				unit->rest();
 			return true;
-		} else {
+		} else { //otherwise get back to our cat
 			auto cat_path = find_path(unit->tile, player->cat->tile);
 
 			while (cat_path.size() > 1 && unit->moves > 0) {
 				mover(unit, cat_path);
 				cat_path = find_path(unit->tile, player->cat->tile);
 			}
-
 			if (is_adj_to_cat(unit->tile) && unit->moves > 0) {
 				if (unit->energy < 100) //try to rest
 					unit->rest();
