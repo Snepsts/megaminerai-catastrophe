@@ -567,6 +567,191 @@ bool AI::gatherer_turn(Unit& unit)
 	return false; //something went wrong
 }
 
+
+std::vector<Tile> AI::find_full_deposit(Unit& unit){
+	//return the shortest path to a tile with enough materials for a shelter, or a empty vector if theres nothing
+	std::vector<Tile> nodes_to_try;
+	std::vector<Tile> full_deposit;
+
+	for (auto q : game->tiles) {
+		if(q->materials == 50){
+			full_deposit.push_back(q);
+		}
+	}
+
+	for (auto q : full_deposit) {
+		Tile temp = q;
+		nodes_to_try.push_back(temp);
+	}
+
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_closest_deposit(Unit& unit){
+	std::vector<Tile> nodes_to_try;
+	std::vector<Tile> deposit;
+
+	for (auto q : game->tiles) {
+		if(q->materials > 0)
+			deposit.push_back(q);
+		}
+
+	for (auto q : deposit) {
+		Tile temp = q;
+		nodes_to_try.push_back(temp);
+	}
+
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_nearest_empty_tile(Unit& unit){
+	std::vector<Tile> nodes_to_try;
+	std::vector<Tile> emptyTiles;
+
+	for (auto q : game->tiles) {
+		if(q->is_pathable()){
+			emptyTiles.push_back(q);
+		}
+	}
+
+	for (auto q : emptyTiles) {
+		Tile temp = q;
+		nodes_to_try.push_back(temp);
+	}
+
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_closest_structure(Unit& unit){
+	std::vector<Tile> nodes_to_try;
+	std::vector<Tile> neutralStructures;
+
+	for (auto q : game->tiles) {
+		if(q->structure->type == "neutral"){
+			neutralStructures.push_back(q);
+		}
+	}
+
+	for (auto q : neutralStructures) {
+		Tile temp = q;
+		nodes_to_try.push_back(temp);
+	}
+
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+bool AI::builder_turn(Unit& unit){
+	//if there is any tile with enough materials and we have the energy go construct a shelter
+	std::vector<Tile> closestFullMaterialDeposit = find_full_deposit(unit);
+	if(closestFullMaterialDeposit.size() > 0 && unit->energy >= 75.0){
+		while(closestFullMaterialDeposit.size() > 1 && unit->moves > 0){
+			mover(unit, closestFullMaterialDeposit);
+			closestFullMaterialDeposit = find_full_deposit(unit);
+		}
+		if(closestFullMaterialDeposit.size() == 1){
+			if(!unit->acted){
+				unit->construct(game->get_tile_at(closestFullMaterialDeposit[0]->x, closestFullMaterialDeposit[0]->y), "shelter");
+				unit->rest();
+				return true;
+			}
+			else{
+				//wait till next turn to construct
+				return true;
+			}
+		}
+	}
+
+	//if inventory is full go to closest tile with materials
+	if(unit->materials >= unit->job->carry_limit){
+		std::vector<Tile> closestMaterialDeposit = find_closest_deposit(unit);
+		if (closestMaterialDeposit.size() == 0){
+			std::vector<Tile> closestEmptyTile = find_nearest_empty_tile(unit);
+			while(closestEmptyTile.size() > 1 && unit->moves >0){
+				mover(unit, closestEmptyTile);
+				closestEmptyTile = find_nearest_empty_tile(unit);
+			}
+			if(closestEmptyTile.size() == 1){
+				unit->drop(game->get_tile_at(closestEmptyTile[0]->x, closestEmptyTile[0]->y), "material");
+				if(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y)->materials >= 50){//if there is enoug materials to build then build
+					if(!unit->acted){
+						unit->construct(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y), "shelter");
+						unit->rest();
+						return true;
+					}
+					else{
+						//wait till next turn to build
+						return true;
+					}
+				}
+			}
+		} else {
+			while(closestMaterialDeposit.size() > 1 && unit->moves > 0){
+				mover(unit, closestMaterialDeposit);
+				closestMaterialDeposit = find_closest_deposit(unit);
+			}
+			if(closestMaterialDeposit.size() == 1){//drop materials if we can
+				unit->drop(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y), "material");
+				if(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y)->materials >= 50){//if there is enoug materials to build then build
+					if(!unit->acted){
+						unit->construct(game->get_tile_at(closestMaterialDeposit[0]->x, closestMaterialDeposit[0]->y), "shelter");
+						unit->rest();
+						return true;
+					}
+					else{
+						//wait till next turn to build
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	//if energy is low go rest
+	if(unit->energy < 75.0){
+		std::vector<Tile> closestShelter = find_closest_shelter(unit);
+		while(closestShelter.size() > 1 && unit->moves > 0){
+			mover(unit, closestShelter);
+			closestShelter = find_closest_shelter(unit);
+		}
+		if(closestShelter.size() > 1){
+			unit->rest();
+			return true;
+		}
+		return true;
+	}
+	//if we have energy go get materials then deposit
+	else{
+		std::vector<Tile> closestNeutralStructure = find_closest_structure(unit);
+		while(closestNeutralStructure.size() > 1 && unit->moves > 0){
+			mover(unit, closestNeutralStructure);
+			closestNeutralStructure = find_closest_structure(unit);
+		}
+		if(closestNeutralStructure.size() == 1){
+			if(!unit->acted){
+				unit->harvest(game->get_tile_at(closestNeutralStructure[0]->x, closestNeutralStructure[0]->y));
+				//harvested so head towards shelter
+				std::vector<Tile> closestShelter = find_closest_shelter(unit);
+				while(closestShelter.size() > 1 && unit->moves > 0){
+					mover(unit, closestShelter);
+					closestShelter = find_closest_shelter(unit);
+				}
+				if(closestShelter.size() > 1){
+					unit->rest();
+					return true;
+				}
+				return true;
+			}
+			else {
+				//wait till next turn
+				return true;
+			}
+
+		}
+
+	}
+	return false;
+}
+
 bool AI::choose_job(Unit& unit)
 {
 	cout << "Choosing job." << endl;
@@ -611,6 +796,11 @@ bool AI::fresh_turn(Unit& unit)
 	while((cat_path.size() > 1) && (unit->moves > 0)) {
 		mover(unit, cat_path);
 		cat_path = find_path(unit->tile, player->cat->tile);
+	}
+	if(cat_path.size() == 1){
+		if(can_change_job(unit)){
+			return choose_job(unit);
+		}
 	}
 
 	return true;
