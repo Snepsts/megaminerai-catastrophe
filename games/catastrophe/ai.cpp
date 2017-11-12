@@ -127,7 +127,6 @@ bool AI::run_turn()
 	{
 		if (unit->job->title == "soldier")
 		{
-			//warrior_turn(unit); <-- broken
 			soldier_turn(unit);
 		}
 		if (unit->job->title == "missionary") {
