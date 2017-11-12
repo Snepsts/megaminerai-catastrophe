@@ -79,11 +79,12 @@ public:
     // <<-- Creer-Merge: methods -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // You can add additional methods here.
     // <<-- /Creer-Merge: methods -->>
-	std::vector<Tile> shortest_path_to_materials(const Unit& builder);
+	std::vector<Tile> shortest_path_to_materials(const Unit& unit);
 	//bool builder_turn(Unit& builder);
-	std::vector<Tile> find_closest_shelter(const Unit& unitPosition);
-	std::vector<Tile> find_closest_neutral_human(const Unit& unitPosition);
-	std::vector<Tile> find_closest_soldier(const Unit& unitPosition);
+	std::vector<Tile> find_closest_shelter(const Unit& unit);
+	std::vector<Tile> find_closest_neutral_human(const Unit& unit);
+	std::vector<Tile> find_closest_soldier(const Unit& unit);
+	std::vector<Tile> find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit);
 	bool converter_turn(Unit& converter);
 	bool soldier_turn(Unit& unit);
 	std::vector<Tile> find_closest_enemy(const Unit& unit);
