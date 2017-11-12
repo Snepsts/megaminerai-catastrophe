@@ -410,6 +410,86 @@ bool AI::converter_turn(Unit& converter){
 			}
 		}
 	}
+	return false;
+}
+
+std::vector<Tile> AI::find_closest_enemy(const Unit& unit){
+	//return the shortest path to a soldier, or a empty vector if theres nothing
+	std::vector<std::vector<Tile> > possible_paths;
+	std::vector<Tile> nodes_to_try;
+	std::vector<Unit> enemies;
+	for(auto q : player->opponent->units){
+			enemies.push_back(q);
+	}
+	for(auto q : enemies){
+			Tile temp = q->tile;
+			nodes_to_try.push_back(temp);
+	}
+	for(auto q : nodes_to_try){
+		std::vector<Tile> temp = find_path(unit->tile, q);
+		if(!temp.empty())
+			possible_paths.push_back(temp);
+	}
+	if (possible_paths.empty()){
+		return nodes_to_try;
+	}
+	int size = possible_paths[0].size();
+	int index = 0;
+	for(int i = 0; i < possible_paths.size(); ++i){
+		if(possible_paths[i].size() < size){
+			size = possible_paths[i].size();
+			index = i;
+		}
+	}
+	return possible_paths[index];
+}
+
+bool AI::soldier_turn(Unit& unit){
+	if(unit->energy <= 25.0){//not enough energy so lets go rest
+		std::vector<Tile> closestStructure = find_closest_shelter(unit);
+		if(closestStructure.size() == 0){
+			//No structure sooooo what do we want to do?
+			return false;
+		}
+		if (closestStructure.size() == 1){
+			unit->rest();
+			return true;
+		}
+		else{
+			while((!closestStructure.empty()) && (unit->moves > 0)){
+				auto iter = closestStructure.begin();
+				unit->move(*iter);
+				closestStructure.erase(iter);
+
+			}
+			return true;
+		}
+	}
+	else{
+		//have energy lets hunt for a enemy
+		std::vector<Tile> closestEnemy = find_closest_enemy(unit);
+		if(closestEnemy.empty()){
+			return false; // no enemy so what do you want to do?
+		}
+		else if(closestEnemy.size()-1 <= unit->moves){
+			//lets attack this Turn
+			while(closestEnemy.size() > 1){
+				auto iter = closestEnemy.begin();
+				unit->move(*iter);
+				closestEnemy.erase(iter);
+			}
+			unit->attack(closestEnemy[0]);
+			return 1;
+		}
+		else{//move towards the unit
+			while(unit->moves > 0){
+				auto iter = closestEnemy.begin();
+				unit->move(*iter);
+				closestEnemy.erase(iter);
+			}
+		}
+	}
+	return false; // some issue
 }
 
 void AI::warrior_turn(const Unit& unit)

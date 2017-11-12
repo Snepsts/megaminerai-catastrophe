@@ -86,6 +86,8 @@ public:
 	std::vector<Tile> find_closest_soldier(const Unit& unitPosition);
 	bool converter_turn(Unit& converter);
 	void warrior_turn(const Unit& unit);
+	bool soldier_turn(Unit& unit);
+	std::vector<Tile> find_closest_enemy(const Unit& unit);
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
 /// <param name="start">the starting Tile</param>
 /// <param name="goal">the goal Tile</param>
