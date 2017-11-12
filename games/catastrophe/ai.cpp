@@ -517,7 +517,7 @@ std::vector<Tile> AI::find_closest_food(const Unit& unit)
 bool AI::gatherer_turn(Unit& unit)
 {
 	//if storage is full or energy is low return and deposit food
-	if ((unit->materials >= 100) || (unit->energy < 75.0)) {
+	if ((unit->materials >= unit->job->carry_limit) || (unit->energy < 75.0)) {
 		std::cout << "Goind to return materials" << endl;
 		std::vector<Tile> closestShelter = find_closest_shelter(unit);
 		while((closestShelter.size() > 1) && (unit->moves > 0)) {
