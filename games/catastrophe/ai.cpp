@@ -125,10 +125,10 @@ bool AI::run_turn()
 
 	for (auto unit : player_units)
 	{
-		/*
 		if (unit->job->title == "soldier")
-			warrior_turn(unit);
-		*/
+		{
+			//warrior_turn(unit); <-- broken
+		}
 	}
 
 	cout << "Ending turn." << endl;
