@@ -114,6 +114,7 @@ bool AI::run_turn()
 
 	//grab all enemy units
 	int enemy_soldier_count = 0;
+	int player_soldier_count = 0;
 	auto loser_units = player->opponent->units;
 
 	for (auto unit : loser_units) {
@@ -123,6 +124,18 @@ bool AI::run_turn()
 	}
 
 	if (enemy_soldier_count < 1 && game->current_turn >= 20) {
+		death_squad = true;
+	}
+
+	auto player_units = player->units;
+
+	for (auto unit : player_units) {
+		if (unit->job->title == "soldier") {
+			player_soldier_count++;
+		}
+	}
+
+	if(enemy_soldier_count < player_soldier_count-1 && game->current_trun >= 20){
 		death_squad = true;
 	}
 
