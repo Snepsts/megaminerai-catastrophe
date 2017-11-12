@@ -525,9 +525,7 @@ bool AI::gatherer_turn(Unit& unit)
 			closestShelter = find_closest_shelter(unit);
 		}
 		if(closestShelter.size() == 1) { //if we are at the shelter
-			if(unit->materials > 0) {//drop the materials if we have any
-				unit->drop(closestShelter[0], "food", 0);
-			}
+			unit->drop(closestShelter[0], "food", -1);
 			if(unit->energy < 75.0) {//rest if we need to
 				unit->rest();
 				return true;
@@ -558,7 +556,7 @@ bool AI::gatherer_turn(Unit& unit)
 					closestShelter = find_closest_shelter(unit);
 				}
 				if(closestShelter.size() == 1) {//we made it to a shelter
-					unit->drop(closestShelter[0], "food", 0);
+					unit->drop(closestShelter[0], "food", -1);
 					unit->rest();
 				}
 				return true;
