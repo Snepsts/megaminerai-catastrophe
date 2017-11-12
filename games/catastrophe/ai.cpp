@@ -15,6 +15,8 @@ namespace cpp_client
 namespace catastrophe
 {
 
+Unit defender;
+
 /// <summary>
 /// This returns your AI's name to the game server.
 /// Replace the string name.
@@ -124,6 +126,7 @@ bool AI::run_turn()
 
 	for (auto unit : player_units) {
 		if (unit->job->title == "soldier" && soldier_count > 1 && !is_protected) {
+			defender = unit;
 			defender_turn(unit);
 			is_protected = true;
 		}
@@ -289,7 +292,7 @@ std::vector<Tile> AI::find_closest_soldier(const Unit& unit)
 	std::vector<Tile> nodes_to_try;
 	std::vector<Unit> ourSoldiers;
 	for (auto q : player->units) {
-		if (q->job->title == "soldier") {
+		if (q->job->title == "soldier" && q != defender) {
 			ourSoldiers.push_back(q);
 		}
 	}
