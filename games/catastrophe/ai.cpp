@@ -368,10 +368,12 @@ bool AI::converter_turn(Unit& converter)
 			converter->rest();
 			return true;
 		} else {
-			while((!closestStructure.empty()) && (converter->moves > 0)) {
-				auto iter = closestStructure.begin();
-				converter->move(*iter);
-				closestStructure.erase(iter);
+			while((closestStructure.size() > 1) && (converter->moves > 0)) {
+				mover(converter, closestStructure);
+				closestStructure = find_closest_shelter(converter);
+			}
+			if(closestStructure.size() == 1){
+				converter->rest();
 			}
 			return true;
 		}
@@ -460,23 +462,15 @@ bool AI::soldier_turn(Unit& unit)
 		if (closestEnemy.empty()) {
 			std::cout << "error no enemy, soldier turn" << endl;
 			return false; // no enemy so what do you want to do?
-		} else if (closestEnemy.size()-1 <= unit->moves) {
-			std::cout << "soldier is moving and will attack this turn" << endl;
-			//lets attack this Turn
-			while(closestEnemy.size() > 1) {
-				auto iter = closestEnemy.begin();
-				unit->move(*iter);
-				closestEnemy.erase(iter);
+		} else {
+			while((closestEnemy.size()) > 1 && (unit->moves > 0)){
+				mover(unit, closestEnemy);
+				closestEnemy = find_closest_enemy(unit);
 			}
-			unit->attack(closestEnemy[0]);
-			return 1;
-		} else { //move towards the unit
-			std::cout << "soldier is only moving towards the unit this turn" << endl;
-			while(unit->moves > 0) {
-				auto iter = closestEnemy.begin();
-				unit->move(*iter);
-				closestEnemy.erase(iter);
+			if(closestEnemy.size() == 1){
+				unit->attack(closestEnemy[0]);
 			}
+			return true;
 		}
 	}
 	return false; // some issue
@@ -495,7 +489,7 @@ std::vector<Tile> AI::find_closest_food(const Unit& unit)
 	std::vector<std::vector<Tile> > possible_paths;
 	std::vector<Tile> nodes_to_try;
 	for(auto q : game->tiles) {
-		if(q->harvest_rate > 0) {
+		if((q->harvest_rate > 0) && (q->turns_to_harvest == 0)) {
 			nodes_to_try.push_back(q);
 		}
 	}
@@ -504,9 +498,11 @@ std::vector<Tile> AI::find_closest_food(const Unit& unit)
 		if(!temp.empty())
 			possible_paths.push_back(temp);
 	}
+
 	if (possible_paths.empty()) {
 		return nodes_to_try;
 	}
+
 	int size = possible_paths[0].size();
 	int index = 0;
 	for(int i = 0; i < possible_paths.size(); ++i) {
@@ -522,6 +518,7 @@ bool AI::gatherer_turn(Unit& unit)
 {
 	//if storage is full or energy is low return and deposit food
 	if ((unit->materials >= 100) || (unit->energy < 75.0)) {
+		std::cout << "Goind to return materials" << endl;
 		std::vector<Tile> closestShelter = find_closest_shelter(unit);
 		while((closestShelter.size() > 1) && (unit->moves > 0)) {
 			mover(unit, closestShelter);
@@ -539,16 +536,21 @@ bool AI::gatherer_turn(Unit& unit)
 	}
 
 	//hunt for food to gather
+	std::cout<<"Hunting for food to gather" << endl;
 	std::vector<Tile> foodSource = find_closest_food(unit);
 	while((foodSource.size() > 1) && (unit->moves > 0)) {
 		mover(unit, foodSource);
 		foodSource = find_closest_food(unit);
 	}
-	if(foodSource.size() > 1) {//if we are at the food source
-		if(unit->acted) //we cant act for whatever reason
+	if(foodSource.size() == 1) {//if we are at the food source
+		if(unit->acted){ //we cant act for whatever reason
+			std::cout << "I have already acted!" << endl;
 			return true;
+		}
 		else{
-			unit->harvest(foodSource[0]);
+			std::cout<<"Harvesting!"<<endl;
+			Tile temp = game->get_tile_at(foodSource[0]->x, foodSource[0]->y);
+			unit->harvest(temp);
 			if(unit->moves > 0) {//if we can lets start back towards the shelter
 				std::vector<Tile> closestShelter = find_closest_shelter(unit);
 				while((closestShelter.size() > 1) && (unit->moves > 0)) {
