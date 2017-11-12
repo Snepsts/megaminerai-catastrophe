@@ -74,41 +74,31 @@ bool AI::run_turn()
     // Put your game logic here for run_turn here
 	cout << "Running turn." << endl;
 
-	if (first_turn)
-	{
+	if (first_turn) {
 		auto player_units = player->units;
 
 		int counter = 0;
 
-		for (auto unit : player_units)
-		{
+		for (auto unit : player_units) {
 			cout << unit->job->title << endl;
 			if (unit->job->title == "cat overlord")
 				cout << "Reached cat" << endl;
-			else
-			{
-				if (counter == 0)
-				{
-					if (unit->change_job("missionary"))
-					{
+			else {
+				if (counter == 0) {
+					if (unit->change_job("missionary")) {
 						cout << "missionary is the Correct Name." << endl;
 						counter++;
 					}
 					cout << "The title is: \n\n\n" << unit->job->title << endl;
 				}
-				else if (counter == 1)
-				{
-					if (unit->change_job("gatherer"))
-					{
+				else if (counter == 1) {
+					if (unit->change_job("gatherer")) {
 						cout << "builder is the Correct Name." << endl;
 						counter++;
 					}
 					cout << "The title is: \n\n\n" << unit->job->title << endl;
-				}
-				else //counter == 2
-				{
-					if (unit->change_job("soldier"))
-					{
+				} else { //counter == 2
+					if (unit->change_job("soldier")) {
 						cout << "Created a soldier." << endl;
 						counter++;
 					}
@@ -122,11 +112,22 @@ bool AI::run_turn()
 
 	//grab all units
 	auto player_units = player->units;
+	int soldier_count = 0;
 
-	for (auto unit : player_units)
-	{
-		if (unit->job->title == "soldier")
-		{
+	for (auto unit : player_units) {
+		if (unit->job->title == "soldier") {
+			soldier_count++;
+		}
+	}
+
+	bool is_protected = false;
+
+	for (auto unit : player_units) {
+		if (unit->job->title == "soldier" && soldier_count > 1 && !is_protected) {
+			defender_turn(unit);
+			is_protected = true;
+		}
+		if (unit->job->title == "soldier") {
 			soldier_turn(unit);
 		}
 		if (unit->job->title == "missionary") {
@@ -587,12 +588,10 @@ bool AI::choose_job(Unit& unit)
 	if (missionaries < 1 || missionaries < soldiers / 3) {
 		cout << "Choosing missionary" << endl;
 		return unit->change_job("missionary");
-	}
-	else if (gatherers < 2) {
+	} else if (gatherers < 2) {
 		cout << "Choosing gatherer" << endl;
 		return unit->change_job("gatherer");
-	}
-	else {
+	} else {
 		cout << "Choosing soldier" << endl;
 		return unit->change_job("soldier");
 	}
@@ -602,7 +601,7 @@ bool AI::choose_job(Unit& unit)
 
 bool AI::fresh_turn(Unit& unit)
 {
-	if (can_change_job(unit)) {
+	if (is_adj_to_cat(unit->tile)) {
 		return choose_job(unit);
 	}
 
@@ -616,12 +615,65 @@ bool AI::fresh_turn(Unit& unit)
 	return true;
 }
 
-bool AI::can_change_job(Unit& unit)
+bool AI::is_adj_to_cat(const Tile& tile)
 {
-	return (unit->tile->tile_north == player->cat->tile ||
-	    unit->tile->tile_south == player->cat->tile ||
-	    unit->tile->tile_west == player->cat->tile ||
-	    unit->tile->tile_east == player->cat->tile);
+	return (tile->tile_north == player->cat->tile ||
+	        tile->tile_south == player->cat->tile ||
+	        tile->tile_west == player->cat->tile ||
+	        tile->tile_east == player->cat->tile);
+}
+
+bool AI::defender_turn(Unit& unit)
+{
+	auto cat_attacker_path = find_closest_enemy_defender(unit);
+
+	if (cat_attacker_path.size() > 0) { //if people are attacking our cat
+		while (cat_attacker_path.size() > 1 && unit->moves > 0) {
+			mover(unit, cat_attacker_path);
+			cat_attacker_path = find_path(unit->tile, player->cat->tile);
+		}
+		if (cat_attacker_path.size() == 1 && unit->moves >0) {
+			unit->attack(cat_attacker_path[0]);
+		}
+	} else { //people are not attacking our cat
+		if (is_adj_to_cat(unit->tile)) {
+			if (unit->energy < 100) //try to rest
+				unit->rest();
+			return true;
+		} else {
+			auto cat_path = find_path(unit->tile, player->cat->tile);
+
+			while (cat_path.size() > 1 && unit->moves > 0) {
+				mover(unit, cat_path);
+				cat_path = find_path(unit->tile, player->cat->tile);
+			}
+
+			if (is_adj_to_cat(unit->tile) && unit->moves > 0) {
+				if (unit->energy < 100) //try to rest
+					unit->rest();
+			}
+		}
+	}
+
+	return true;
+}
+
+std::vector<Tile> AI::find_closest_enemy_defender(Unit& unit)
+{
+	std::vector<Tile> nodes_to_try;
+	std::vector<Unit> enemies;
+
+	for (auto q : player->opponent->units) {
+			enemies.push_back(q);
+	}
+
+	for (auto q : enemies) {
+		Tile temp = q->tile;
+		if (is_adj_to_cat(q->tile))
+			nodes_to_try.push_back(temp);
+	}
+
+	return find_closest_helper(nodes_to_try, unit);
 }
 
 } // catastrophe
