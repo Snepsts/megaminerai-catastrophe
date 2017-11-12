@@ -98,7 +98,7 @@ bool AI::run_turn()
 				}
 				else if (counter == 1)
 				{
-					if (unit->change_job("builder"))
+					if (unit->change_job("gatherer"))
 					{
 						cout << "builder is the Correct Name." << endl;
 						counter++;
@@ -132,6 +132,9 @@ bool AI::run_turn()
 		}
 		if (unit->job->title == "missionary") {
 			converter_turn(unit);
+		}
+		if(unit->job->title == "gatherer"){
+			gatherer_turn(unit);
 		}
 	}
 

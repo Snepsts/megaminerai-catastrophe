@@ -88,6 +88,9 @@ public:
 	bool converter_turn(Unit& converter);
 	bool soldier_turn(Unit& unit);
 	std::vector<Tile> find_closest_enemy(const Unit& unit);
+	bool gatherer_turn(Unit& unit);
+	std::vector<Tile> find_closest_food(const Unit& unit);
+	void mover(Unit& unit, std::vector<Tile> path);
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
 /// <param name="start">the starting Tile</param>
 /// <param name="goal">the goal Tile</param>
