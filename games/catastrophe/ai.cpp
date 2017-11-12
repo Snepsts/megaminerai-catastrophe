@@ -328,9 +328,9 @@ bool AI::converter_turn(Unit& converter)
 
 	//energy higher than 75 so lets try to convert a enemy
 	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(converter);
-	if ((closestNeutralHuman.empty()) || (closestNeutralHuman.size()-1 > converter->moves)) {
+	if (closestNeutralHuman.empty()) {
 		std::cout << "following soldier, converter turn" << endl;
-		// no enemies or none close enough to convert
+		// no neutral enemies
 		//so follow soilder instead
 		std::vector<Tile> soldierToFollow = find_closest_soldier(converter);
 		if (soldierToFollow.size() == 1) {
@@ -349,21 +349,21 @@ bool AI::converter_turn(Unit& converter)
 		} else {
 			return false; //no soldier so what do we want to do?
 		}
-	} else { // enemy close enough to convert
+	} else { // neutral enemy to convert
 		std::cout << "Going to convert neutral human, converter turn" << endl;
 		while((closestNeutralHuman.size() > 1) && (converter->moves > 0)) { //move to the neutralHumans
 			mover(converter, closestNeutralHuman);
 			closestNeutralHuman = find_closest_neutral_human(converter);
 		}
-		converter->convert(closestNeutralHuman[0]);
+		if(closestNeutralHuman.size() == 1){
+			converter->convert(closestNeutralHuman[0]);
+		}
 		//converted an enemy so lets head towards a restpoint
 		std::vector<Tile> closestStructure = find_closest_shelter(converter);
-
 		if (closestStructure.size() == 0) {
 			//No structure sooooo what do we want to do?
 			return false;
 		}
-
 		if (closestStructure.size() == 1) {
 			converter->rest();
 			return true;
@@ -526,7 +526,7 @@ bool AI::gatherer_turn(Unit& unit)
 			closestShelter = find_closest_shelter(unit);
 		}
 		if(closestShelter.size() == 1) { //if we are at the shelter
-			unit->drop(closestShelter[0], "food", 9999);
+			unit->drop(game->get_tile_at(closestShelter[0]->x, closestShelter[0]->y), "food");
 			if(unit->energy < 75.0) {//rest if we need to
 				unit->rest();
 				return true;
@@ -557,7 +557,7 @@ bool AI::gatherer_turn(Unit& unit)
 					closestShelter = find_closest_shelter(unit);
 				}
 				if(closestShelter.size() == 1) {//we made it to a shelter
-					unit->drop(closestShelter[0], "food", 9999);
+					unit->drop(game->get_tile_at(closestShelter[0]->x, closestShelter[0]->y), "food");
 					unit->rest();
 				}
 				return true;
