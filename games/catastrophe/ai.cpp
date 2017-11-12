@@ -92,7 +92,7 @@ bool AI::run_turn()
 					cout << "The title is: \n\n\n" << unit->job->title << endl;
 				}
 				else if (counter == 1) {
-					if (unit->change_job("gatherer")) {
+					if (unit->change_job("soldier")) {
 						cout << "builder is the Correct Name." << endl;
 						counter++;
 					}
@@ -588,7 +588,7 @@ bool AI::choose_job(Unit& unit)
 	if (missionaries < 1 || missionaries < soldiers / 3) {
 		cout << "Choosing missionary" << endl;
 		return unit->change_job("missionary");
-	} else if (gatherers < 2) {
+	} else if (gatherers < 1) {
 		cout << "Choosing gatherer" << endl;
 		return unit->change_job("gatherer");
 	} else {
