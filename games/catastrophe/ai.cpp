@@ -238,9 +238,9 @@ std::vector<Tile> AI::shortest_path_to_materials(const Unit& builder){
 	if (possible_paths.empty()){
 		return nodes_to_try;
 	}
-	int size = possible_paths[0].size();
+	unsigned size = possible_paths[0].size();
 	int index = 0;
-	for(int i = 0; i < possible_paths.size(); ++i){
+	for(unsigned i = 0; i < possible_paths.size(); ++i){
 		if(possible_paths[i].size() < size){
 			size = possible_paths[i].size();
 			index = i;
@@ -271,9 +271,9 @@ std::vector<Tile> AI::find_closest_shelter(const Unit& unitPosition){
 	if (possible_paths.empty()){
 		return nodes_to_try;
 	}
-	int size = possible_paths[0].size();
+	unsigned size = possible_paths[0].size();
 	int index = 0;
-	for(int i = 0; i < possible_paths.size(); ++i){
+	for(unsigned i = 0; i < possible_paths.size(); ++i){
 		if(possible_paths[i].size() < size){
 			size = possible_paths[i].size();
 			index = i;
@@ -304,9 +304,9 @@ std::vector<Tile> AI::find_closest_neutral_human(const Unit& unitPosition){
 	if (possible_paths.empty()){
 		return nodes_to_try;
 	}
-	int size = possible_paths[0].size();
+	unsigned size = possible_paths[0].size();
 	int index = 0;
-	for(int i = 0; i < possible_paths.size(); ++i){
+	for(unsigned i = 0; i < possible_paths.size(); ++i){
 		if(possible_paths[i].size() < size){
 			size = possible_paths[i].size();
 			index = i;
@@ -337,9 +337,9 @@ std::vector<Tile> AI::find_closest_soldier(const Unit& unitPosition){
 	if (possible_paths.empty()){
 		return nodes_to_try;
 	}
-	int size = possible_paths[0].size();
+	unsigned size = possible_paths[0].size();
 	int index = 0;
-	for(int i = 0; i < possible_paths.size(); ++i){
+	for(unsigned i = 0; i < possible_paths.size(); ++i){
 		if(possible_paths[i].size() < size){
 			size = possible_paths[i].size();
 			index = i;
@@ -443,9 +443,9 @@ std::vector<Tile> AI::find_closest_enemy(const Unit& unit){
 	if (possible_paths.empty()){
 		return nodes_to_try;
 	}
-	int size = possible_paths[0].size();
+	unsigned size = possible_paths[0].size();
 	int index = 0;
-	for(int i = 0; i < possible_paths.size(); ++i){
+	for(unsigned i = 0; i < possible_paths.size(); ++i){
 		if(possible_paths[i].size() < size){
 			size = possible_paths[i].size();
 			index = i;
