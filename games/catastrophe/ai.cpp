@@ -127,7 +127,7 @@ bool AI::run_turn()
 	{
 		if (unit->job->title == "soldier")
 		{
-			//warrior_turn(unit); <-- broken
+			warrior_turn(unit);
 		}
 	}
 
@@ -454,20 +454,25 @@ void AI::warrior_turn(const Unit& unit)
 
 	cout << "9" << endl;
 
-	auto enemy = enemy_path.back();
+	auto enemy = enemy_path.end() - 1;
 
 	cout << "10" << endl;
 
 	while (unit->moves > 0)
 	{
-		if (unit->attack(enemy)) //if we can attack, attack
+		if (unit->attack(*enemy)) //if we can attack, attack
 		{
 			//cool we just attacked
 		}
-		else //else attempt to move towards the enemy
+		else if (enemy_path.size() > 0) //else attempt to move towards the enemy
 		{
-			auto loc = find_path(unit->tile, enemy);
-			unit->move(loc[0]);
+			auto loc = enemy_path.begin();
+			unit->move(*loc);
+			enemy_path.erase(loc);
+		}
+		else
+		{
+			break;
 		}
 	}
 }
