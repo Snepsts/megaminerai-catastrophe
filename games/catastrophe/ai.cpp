@@ -908,7 +908,49 @@ std::vector<Tile> AI::find_closest_enemy_defender(Unit& unit)
 
 std::vector<Tile> AI::find_enemy_cat(Unit& unit)
 {
-	return find_path(unit->tile, player->opponent->cat->tile);
+	std::vector<Tile> nodes_to_try;
+	std::vector<Tile> tilesToTry;
+	tilesToTry.push_back(player->opponent->cat->tile);
+	Tile Ntile = player->opponent->cat->tile->tile_north;
+	Tile Stile = player->opponent->cat->tile->tile_south;
+	Tile Etile = player->opponent->cat->tile->tile_east;
+	Tile Wtile = player->opponent->cat->tile->tile_west;
+	bool ourNUnit = false;
+	bool ourSUnit = false;
+	bool ourEUnit = false;
+	bool ourWUnit = false;
+	for(auto q : player->units){
+		if((Ntile != NULL) && (q == Ntile->unit)){
+			ourNUnit = true;
+		}
+		if((Stile != NULL) && (q == Stile->unit)){
+			ourSUnit = true;
+		}
+		if((Etile != NULL) && (q == Etile->unit)){
+			ourEUnit = true;
+		}
+		if((Wtile != NULL) && (q == Wtile->unit)){
+			ourWUnit = true;
+		}
+	}
+	if((Ntile != NULL) && (!ourNUnit) && (Ntile->unit != NULL)){
+		tilesToTry.push_back(player->opponent->cat->tile->tile_north);
+	}
+	if((Stile != NULL) && (!ourSUnit) && (Stile->unit != NULL)){
+		tilesToTry.push_back(player->opponent->cat->tile->tile_south);
+	}
+	if((Etile != NULL) && (!ourEUnit) && (Etile->unit != NULL)){
+		tilesToTry.push_back(player->opponent->cat->tile->tile_east);
+	}
+	if((Wtile != NULL) && (!ourWUnit) && (Wtile->unit != NULL)){
+		tilesToTry.push_back(player->opponent->cat->tile->tile_west);
+	}
+	for (auto q : tilesToTry) {
+		Tile temp = q;
+		nodes_to_try.push_back(temp);
+	}
+
+	return find_closest_helper(nodes_to_try, unit);
 }
 
 bool AI::death_squad_turn(Unit& unit)
