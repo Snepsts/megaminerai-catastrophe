@@ -797,7 +797,7 @@ bool AI::fresh_turn(Unit& unit)
 		cat_path = find_path(unit->tile, player->cat->tile);
 	}
 	if(cat_path.size() == 1){
-		if(can_change_job(unit)){
+		if(is_adj_to_cat(unit->tile)){
 			return choose_job(unit);
 		}
 	}
