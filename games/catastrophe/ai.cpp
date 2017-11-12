@@ -913,7 +913,7 @@ std::vector<Tile> AI::find_enemy_cat(Unit& unit)
 
 bool AI::death_squad_turn(Unit& unit)
 {
-	if (unit->job->title == "soldier") {
+	if ((unit->job->title == "soldier") && (unit->energy > 25))  {
 		auto path_to_commie = find_enemy_cat(unit);
 
 		if (path_to_commie.size() == 0) { //cat is blocked off
@@ -942,9 +942,37 @@ bool AI::death_squad_turn(Unit& unit)
 			}
 		}
 	} else {
-		return fresh_turn(unit);
-	}
+		if(unit->job->title == "soldier"){
+			std::vector<Tile> closestStructure = find_closest_shelter(unit);
 
+			if (closestStructure.size() == 0) {
+				std::cout << "Error, no shelter, soldier turn" << endl;
+				//No structure sooooo what do we want to do?
+				return false;
+			}
+
+			if (closestStructure.size() == 1) {
+				std::cout << "Soldier is resting" << endl;
+				unit->rest();
+				return true;
+			}
+			else {
+				std::cout << "Moving to shelter, to rest soldier turn" << endl;
+				while((closestStructure.size() > 1) && (unit->moves > 0)) {
+					mover(unit, closestStructure);
+					closestStructure = find_closest_shelter(unit);
+
+				}
+				if(closestStructure.size() == 1){
+					unit->rest();
+				}
+				return true;
+			}
+		}
+		 else {
+			return fresh_turn(unit);
+		}
+	}
 	return true;
 }
 
