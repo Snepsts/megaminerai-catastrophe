@@ -128,6 +128,10 @@ bool AI::run_turn()
 		if (unit->job->title == "soldier")
 		{
 			//warrior_turn(unit); <-- broken
+			soldier_turn(unit);
+		}
+		if (unit->job->title == "missionary"){
+			converter_turn(unit);
 		}
 	}
 
@@ -448,14 +452,17 @@ bool AI::soldier_turn(Unit& unit){
 	if(unit->energy <= 25.0){//not enough energy so lets go rest
 		std::vector<Tile> closestStructure = find_closest_shelter(unit);
 		if(closestStructure.size() == 0){
+			std::cout << "Error, no shelter, soldier turn" << endl;
 			//No structure sooooo what do we want to do?
 			return false;
 		}
 		if (closestStructure.size() == 1){
+			std::cout << "Soldier is resting" << endl;
 			unit->rest();
 			return true;
 		}
 		else{
+			std::cout << "Moving to shelter, to rest soldier turn" << endl;
 			while((!closestStructure.empty()) && (unit->moves > 0)){
 				auto iter = closestStructure.begin();
 				unit->move(*iter);
@@ -466,12 +473,15 @@ bool AI::soldier_turn(Unit& unit){
 		}
 	}
 	else{
+		std::cout << "Moving towards enemy, soldier turn" << endl;
 		//have energy lets hunt for a enemy
 		std::vector<Tile> closestEnemy = find_closest_enemy(unit);
 		if(closestEnemy.empty()){
+			std::cout << "error no enemy, soldier turn" << endl;
 			return false; // no enemy so what do you want to do?
 		}
 		else if(closestEnemy.size()-1 <= unit->moves){
+			std::cout << "soldier is moving and will attack this turn" << endl;
 			//lets attack this Turn
 			while(closestEnemy.size() > 1){
 				auto iter = closestEnemy.begin();
@@ -482,6 +492,7 @@ bool AI::soldier_turn(Unit& unit){
 			return 1;
 		}
 		else{//move towards the unit
+			std::cout << "soldier is only moving towards the unit this turn" << endl;
 			while(unit->moves > 0){
 				auto iter = closestEnemy.begin();
 				unit->move(*iter);
