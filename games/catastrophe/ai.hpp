@@ -77,7 +77,12 @@ public:
     // <<-- Creer-Merge: methods -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // You can add additional methods here.
     // <<-- /Creer-Merge: methods -->>
-
+	std::vector<Tile> shortest_path_to_materials(const Unit& builder);
+	//bool builder_turn(Unit& builder);
+	std::vector<Tile> find_closest_shelter(const Unit& unitPosition);
+	std::vector<Tile> find_closest_neutral_human(const Unit& unitPosition);
+	std::vector<Tile> find_closest_soldier(const Unit& unitPosition);
+	bool converter_turn(Unit& converter);
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
 /// <param name="start">the starting Tile</param>
 /// <param name="goal">the goal Tile</param>

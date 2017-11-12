@@ -72,7 +72,7 @@ bool AI::run_turn()
 	cout << "Running turn.\n";
 
 	//grab all units
-	auto player_units = player.units;
+	auto player_units = player->units;
 
 	for (auto unit : player_units)
 	{
@@ -165,6 +165,200 @@ std::vector<Tile> AI::find_path(const Tile& start, const Tile& goal)
 //<<-- Creer-Merge: methods -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
 // You can add additional methods here for your AI to call
 //<<-- /Creer-Merge: methods -->>
+std::vector<Tile> AI::shortest_path_to_materials(const Unit& builder){
+	//return the shortest path to a gatherable structure, or a empty vector if theres nothing
+	std::vector<std::vector<Tile> > possible_paths;
+	std::vector<Tile> nodes_to_try;
+	for(auto q : game->tiles){
+		if((q->structure != NULL) && (q->structure->type == "neutral")){
+			nodes_to_try.push_back(q);
+		}
+	}
+	for(auto q : nodes_to_try){
+		std::vector<Tile> temp = AI::find_path(builder->tile, q);
+		if(!temp.empty())
+			possible_paths.push_back(temp);
+	}
+	if (possible_paths.empty()){
+		return nodes_to_try;
+	}
+	int size = possible_paths[0].size();
+	int index = 0;
+	for(int i = 0; i < possible_paths.size(); ++i){
+		if(possible_paths[i].size() < size){
+			size = possible_paths[i].size();
+			index = i;
+		}
+	}
+	return possible_paths[index];
+}
+
+std::vector<Tile> AI::find_closest_shelter(const Unit& unitPosition){
+	//return the shortest path to a structure, or a empty vector if theres nothing
+	std::vector<std::vector<Tile> > possible_paths;
+	std::vector<Tile> nodes_to_try;
+	std::vector<Structure> playerShelters;
+	for(auto q : player->structures){
+		if(q->type == "shelter"){
+			playerShelters.push_back(q);
+		}
+	}
+	for(auto q : playerShelters){
+			Tile temp = q->tile;
+			nodes_to_try.push_back(temp);
+		}
+	for(auto q : nodes_to_try){
+		std::vector<Tile> temp = find_path(unitPosition->tile, q);
+		if(!temp.empty())
+			possible_paths.push_back(temp);
+	}
+	if (possible_paths.empty()){
+		return nodes_to_try;
+	}
+	int size = possible_paths[0].size();
+	int index = 0;
+	for(int i = 0; i < possible_paths.size(); ++i){
+		if(possible_paths[i].size() < size){
+			size = possible_paths[i].size();
+			index = i;
+		}
+	}
+	return possible_paths[index];
+}
+
+std::vector<Tile> AI::find_closest_neutral_human(const Unit& unitPosition){
+	//return the shortest path to a neutral, or a empty vector if theres nothing
+	std::vector<std::vector<Tile> > possible_paths;
+	std::vector<Tile> nodes_to_try;
+	std::vector<Unit> neutralHumans;
+	for(auto q : game->units){
+		if(q->owner == NULL){
+			neutralHumans.push_back(q);
+		}
+	}
+	for(auto q : neutralHumans){
+			Tile temp = q->tile;
+			nodes_to_try.push_back(temp);
+		}
+	for(auto q : nodes_to_try){
+		std::vector<Tile> temp = find_path(unitPosition->tile, q);
+		if(!temp.empty())
+			possible_paths.push_back(temp);
+	}
+	if (possible_paths.empty()){
+		return nodes_to_try;
+	}
+	int size = possible_paths[0].size();
+	int index = 0;
+	for(int i = 0; i < possible_paths.size(); ++i){
+		if(possible_paths[i].size() < size){
+			size = possible_paths[i].size();
+			index = i;
+		}
+	}
+	return possible_paths[index];
+}
+
+std::vector<Tile> AI::find_closest_soldier(const Unit& unitPosition){
+	//return the shortest path to a soldier, or a empty vector if theres nothing
+	std::vector<std::vector<Tile> > possible_paths;
+	std::vector<Tile> nodes_to_try;
+	std::vector<Unit> ourSoldiers;
+	for(auto q : player->units){
+		if(q->job->title == "soldier"){
+			ourSoldiers.push_back(q);
+		}
+	}
+	for(auto q : ourSoldiers){
+			Tile temp = q->tile;
+			nodes_to_try.push_back(temp);
+		}
+	for(auto q : nodes_to_try){
+		std::vector<Tile> temp = find_path(unitPosition->tile, q);
+		if(!temp.empty())
+			possible_paths.push_back(temp);
+	}
+	if (possible_paths.empty()){
+		return nodes_to_try;
+	}
+	int size = possible_paths[0].size();
+	int index = 0;
+	for(int i = 0; i < possible_paths.size(); ++i){
+		if(possible_paths[i].size() < size){
+			size = possible_paths[i].size();
+			index = i;
+		}
+	}
+	return possible_paths[index];
+}
+
+bool AI::converter_turn(Unit& converter){
+	if(converter->energy < 75.0){//not enough energy so try to rest by moving to a rest point
+		std::vector<Tile> closestStructure = find_closest_shelter(converter);
+		if(closestStructure.size() == 0){
+			//No structure sooooo what do we want to do?
+			return false;
+		}
+		if (closestStructure.size() == 1){
+			converter->rest();
+			return true;
+		}
+		else{
+			while((!closestStructure.empty()) && (converter->moves > 0)){
+				auto iter = closestStructure.begin();
+				converter->move(*iter);
+				closestStructure.erase(iter);
+
+			}
+			return true;
+		}
+	}
+	//energy higher than 75 so lets try to convert a enemy
+	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(converter);
+	if ((closestNeutralHuman.empty()) || (closestNeutralHuman.size() > 5 )) // no enemies or none close enough to convert
+	{
+		//so follow soilder instead
+		std::vector<Tile> soldierToFollow = find_closest_soldier(converter);
+		if(soldierToFollow.size() == 1){
+			//already at soldier
+			return true;
+		}
+		if ((soldierToFollow.size() > 1) && (converter->moves > 0)){ //move towards soldier
+			while((!soldierToFollow.empty()) && (converter->moves > 0)){
+				auto iter = soldierToFollow.begin();
+				converter->move(*iter);
+				soldierToFollow.erase(iter);
+			}
+			return true;
+		}
+		else{
+			return false; //no soldier so what do we want to do?
+		}
+	}
+	else{ // enemy close enough to convert
+		if(closestNeutralHuman.size() == 1){//convert the enemy
+			converter->convert(closestNeutralHuman[0]);
+			//converted an enemy so lets head towards a restpoint
+			std::vector<Tile> closestStructure = find_closest_shelter(converter);
+			if(closestStructure.size() == 0){
+				//No structure sooooo what do we want to do?
+				return false;
+			}
+			if (closestStructure.size() == 1){
+				converter->rest();
+				return true;
+			}
+			else{
+				while((!closestStructure.empty()) && (converter->moves > 0)){
+					auto iter = closestStructure.begin();
+					converter->move(*iter);
+					closestStructure.erase(iter);
+				}
+				return true;
+			}
+		}
+	}
+}
 
 } // catastrophe
 
