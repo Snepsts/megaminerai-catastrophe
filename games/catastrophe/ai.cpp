@@ -354,8 +354,8 @@ bool AI::converter_turn(Unit& converter)
 		std::vector<Tile> closestStructure = find_closest_shelter(converter);
 
 		if (closestStructure.size() == 0) {
+			closestStructure = find_path(converter->tile, player->cat->tile);
 			//No structure sooooo what do we want to do?
-			return false;
 		}
 
 		if (closestStructure.size() == 1) {
@@ -410,8 +410,8 @@ bool AI::converter_turn(Unit& converter)
 		//converted an enemy so lets head towards a restpoint
 		std::vector<Tile> closestStructure = find_closest_shelter(converter);
 		if (closestStructure.size() == 0) {
+			closestStructure = find_path(converter->tile, player->cat->tile);
 			//No structure sooooo what do we want to do?
-			return false;
 		}
 		if (closestStructure.size() == 1) {
 			converter->rest();
@@ -482,9 +482,9 @@ bool AI::soldier_turn(Unit& unit)
 		std::vector<Tile> closestStructure = find_closest_shelter(unit);
 
 		if (closestStructure.size() == 0) {
+			closestStructure = find_path(unit->tile, player->cat->tile);
 			std::cout << "Error, no shelter, soldier turn" << endl;
 			//No structure sooooo what do we want to do?
-			return false;
 		}
 
 		if (closestStructure.size() == 1) {
@@ -785,8 +785,8 @@ bool AI::builder_turn(Unit& unit){
 	//	std::cout << "Energy is low so going to rest" << endl;
 		std::vector<Tile> closestShelter = find_closest_shelter(unit);
 		if(closestShelter.size() == 0){
+			closestShelter = find_path(unit->tile, player->cat->tile);
 			std::cout << "     Something went wrong, we can find any shelters" << endl;
-			return false;
 		}
 		while(closestShelter.size() > 1 && unit->moves > 0){
 	//		std::cout << "     moving towards closest shelter!" << endl;
@@ -816,6 +816,9 @@ bool AI::builder_turn(Unit& unit){
 				unit->deconstruct(game->get_tile_at(closestNeutralStructure[0]->x, closestNeutralStructure[0]->y));
 				//harvested so head towards shelter
 				std::vector<Tile> closestShelter = find_closest_shelter(unit);
+				if(closestShelter.size() == 0){
+					find_path(unit->tile, player->cat->tile);
+				}
 				//std::cout << "     Returning to closest shelter" << endl;
 				while(closestShelter.size() > 1 && unit->moves > 0){
 					//std::cout << "     Moving back towards closest shelter" << endl;
@@ -1071,9 +1074,9 @@ bool AI::death_squad_turn(Unit& unit)
 			std::vector<Tile> closestStructure = find_closest_shelter(unit);
 
 			if (closestStructure.size() == 0) {
+				closestStructure = find_path(unit->tile, player->cat->tile);
 				//std::cout << "Error, no shelter, soldier turn" << endl;
 				//No structure sooooo what do we want to do?
-				return false;
 			}
 
 			if (closestStructure.size() == 1) {
