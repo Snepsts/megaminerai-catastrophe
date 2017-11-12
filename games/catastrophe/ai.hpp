@@ -40,6 +40,8 @@ public:
     /// </summary>
     Player player;
 
+	bool first_turn = true;
+
     //<<-- Creer-Merge: class variables -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // You can add additional class variables here.
     //<<-- /Creer-Merge: class variables -->>
@@ -83,6 +85,7 @@ public:
 	std::vector<Tile> find_closest_neutral_human(const Unit& unitPosition);
 	std::vector<Tile> find_closest_soldier(const Unit& unitPosition);
 	bool converter_turn(Unit& converter);
+	void warrior_turn(const Unit& unit);
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
 /// <param name="start">the starting Tile</param>
 /// <param name="goal">the goal Tile</param>
