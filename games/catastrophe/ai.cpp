@@ -930,11 +930,20 @@ bool AI::death_squad_turn(Unit& unit)
 				}
 				return true;
 			}
+		} else {
+			while(path_to_commie.size() > 1 && unit->moves > 0){
+				mover(unit, path_to_commie);
+				path_to_commie = find_enemy_cat(unit);
+			}
+			if(path_to_commie.size() == 1){//next to cat
+				unit->attack(game->get_tile_at(path_to_commie[0]->x, path_to_commie[0]->y));
+			}
 		}
-		return false; // some issue
 	} else {
 		return fresh_turn(unit);
 	}
+
+	return true;
 }
 
 } // catastrophe
