@@ -122,7 +122,7 @@ bool AI::run_turn()
 		}
 	}
 
-	if (enemy_soldier_count < 1) {
+	if (enemy_soldier_count < 1 && game->current_turn >= 40) {
 		death_squad = true;
 	}
 
@@ -535,9 +535,9 @@ std::vector<Tile> AI::find_closest_food(const Unit& unit)
 		return nodes_to_try;
 	}
 
-	int size = possible_paths[0].size();
-	int index = 0;
-	for(int i = 0; i < possible_paths.size(); ++i) {
+	unsigned size = possible_paths[0].size();
+	unsigned index = 0;
+	for(unsigned i = 0; i < possible_paths.size(); ++i) {
 		if(possible_paths[i].size() < size) {
 			size = possible_paths[i].size();
 			index = i;
@@ -932,11 +932,20 @@ bool AI::death_squad_turn(Unit& unit)
 				}
 				return true;
 			}
+		} else {
+			while(path_to_commie.size() > 1 && unit->moves > 0){
+				mover(unit, path_to_commie);
+				path_to_commie = find_enemy_cat(unit);
+			}
+			if(path_to_commie.size() == 1){//next to cat
+				unit->attack(game->get_tile_at(path_to_commie[0]->x, path_to_commie[0]->y));
+			}
 		}
-		return false; // some issue
 	} else {
 		return fresh_turn(unit);
 	}
+
+	return true;
 }
 
 } // catastrophe
