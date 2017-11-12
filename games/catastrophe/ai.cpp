@@ -7,6 +7,7 @@
 // You can add #includes here for your AI.
 // <<-- /Creer-Merge: includes -->>
 using std::cout;
+using std::endl;
 
 namespace cpp_client
 {
@@ -34,26 +35,9 @@ void AI::start()
 {
     // <<-- Creer-Merge: start -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // This is a good place to initialize any variables
-	cout << "Game start.\n";
+	cout << "Game start." << endl;
 
-	auto player_units = player->units;
-
-	//guaranteed to have three
-	if (player_units[0]->change_job("missionary"))
-		cout << "missionary is the Correct Name.\n";
-	if (player_units[0]->change_job("Missionary"))
-		cout << "Missionary is the Correct Name.\n";
-
-	if (player_units[1]->change_job("builder"))
-		cout << "builder is the Correct Name.\n";
-	if (player_units[1]->change_job("Builder"))
-		cout << "Builder is the Correct Name.\n";
-
-	if (player_units[2]->change_job("soldier"))
-		cout << "soldier is the Correct Name.\n";
-	if (player_units[2]->change_job("Soldier"))
-		cout << "Soldier is the Correct Name.\n";
-
+	cout << "Game start end." << endl;
     // <<-- /Creer-Merge: start -->>
 }
 
@@ -76,7 +60,7 @@ void AI::ended(bool won, const std::string& reason)
 {
     //<<-- Creer-Merge: ended -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // You can do any cleanup of your AI here.  The program ends when this function returns.
-	cout << "Game end.\n";
+	cout << "Game end." << endl;
     //<<-- /Creer-Merge: ended -->>
 }
 
@@ -88,17 +72,66 @@ bool AI::run_turn()
 {
     // <<-- Creer-Merge: runTurn -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // Put your game logic here for run_turn here
-	cout << "Running turn.\n";
+	cout << "Running turn." << endl;
+
+	if (first_turn)
+	{
+		auto player_units = player->units;
+
+		int counter = 0;
+
+		for (auto unit : player_units)
+		{
+			cout << unit->job->title << endl;
+			if (unit->job->title == "cat overlord")
+				cout << "Reached cat" << endl;
+			else
+			{
+				if (counter == 0)
+				{
+					if (unit->change_job("missionary"))
+					{
+						cout << "missionary is the Correct Name." << endl;
+						counter++;
+					}
+					cout << "The title is: \n\n\n" << unit->job->title << endl;
+				}
+				else if (counter == 1)
+				{
+					if (unit->change_job("builder"))
+					{
+						cout << "builder is the Correct Name." << endl;
+						counter++;
+					}
+					cout << "The title is: \n\n\n" << unit->job->title << endl;
+				}
+				else //counter == 2
+				{
+					if (unit->change_job("soldier"))
+					{
+						cout << "Created a soldier." << endl;
+						counter++;
+					}
+					cout << "The title is: \n\n\n" << unit->job->title << endl;
+				}
+			}
+		}
+
+		first_turn = false;
+	}
 
 	//grab all units
 	auto player_units = player->units;
 
 	for (auto unit : player_units)
 	{
-		//go through the units we have
+		/*
+		if (unit->job->title == "soldier")
+			warrior_turn(unit);
+		*/
 	}
 
-	cout << "Ending turn.\n";
+	cout << "Ending turn." << endl;
     // <<-- /Creer-Merge: runTurn -->>
     return true;
 }
@@ -187,33 +220,49 @@ std::vector<Tile> AI::find_path(const Tile& start, const Tile& goal)
 
 void AI::warrior_turn(const Unit& unit)
 {
+	cout << "Fighter Turn." << endl;
 	auto opponents = player->opponent->units;
+	cout << "1" << endl;
 	std::vector<Tile> choices;
+	cout << "2" << endl;
 	std::vector<std::vector<Tile>> paths;
+	cout << "3" << endl;
 	Tile attack;
+	cout << "4" << endl;
 
 	for (auto opponent : opponents) //iterate through opponents
 	{
 		choices.push_back(opponent->tile);
 	}
+	cout << "5" << endl;
 
 	for (auto destination : choices) //iterate through tiles
 	{
 		paths.push_back(find_path(unit->tile, destination));
 	}
+	cout << "6" << endl;
 
 	if (paths.empty()) //if there is nothing
+	{
+		cout << "Paths was empty, ending turn." << endl;
 		return;
+	}
+	cout << "7" << endl;
 
 	auto enemy_path = paths[0];
 
+	cout << "8" << endl;
 	for (auto path : paths)
 	{
 		if (enemy_path.size() > path.size())
 			enemy_path = path;
 	}
 
+	cout << "9" << endl;
+
 	auto enemy = enemy_path.back();
+
+	cout << "10" << endl;
 
 	while (unit->moves > 0)
 	{

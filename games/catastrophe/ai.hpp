@@ -40,6 +40,8 @@ public:
     /// </summary>
     Player player;
 
+	bool first_turn = true;
+
     //<<-- Creer-Merge: class variables -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // You can add additional class variables here.
     //<<-- /Creer-Merge: class variables -->>
