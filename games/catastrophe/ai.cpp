@@ -350,6 +350,7 @@ std::vector<Tile> AI::find_closest_soldier(const Unit& unitPosition){
 
 bool AI::converter_turn(Unit& converter){
 	if(converter->energy < 75.0){//not enough energy so try to rest by moving to a rest point
+		std::cout << "moving to rest, converter" << endl;
 		std::vector<Tile> closestStructure = find_closest_shelter(converter);
 		if(closestStructure.size() == 0){
 			//No structure sooooo what do we want to do?
@@ -371,8 +372,9 @@ bool AI::converter_turn(Unit& converter){
 	}
 	//energy higher than 75 so lets try to convert a enemy
 	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(converter);
-	if ((closestNeutralHuman.empty()) || (closestNeutralHuman.size() > 5 )) // no enemies or none close enough to convert
+	if ((closestNeutralHuman.empty()) || (closestNeutralHuman.size()-1 > converter->moves)) // no enemies or none close enough to convert
 	{
+		std::cout << "following soldier, converter turn" << endl;
 		//so follow soilder instead
 		std::vector<Tile> soldierToFollow = find_closest_soldier(converter);
 		if(soldierToFollow.size() == 1){
@@ -392,7 +394,12 @@ bool AI::converter_turn(Unit& converter){
 		}
 	}
 	else{ // enemy close enough to convert
-		if(closestNeutralHuman.size() == 1){//convert the enemy
+		std::cout << "Going to convert neutral human, converter turn" << endl;
+		while((closestNeutralHuman.size() > 1) && (converter->moves > 0)){//move to the neutralHumans
+			auto iter = closestNeutralHuman.begin();
+			converter->move(*iter);
+			closestNeutralHuman.erase(iter);
+		}
 			converter->convert(closestNeutralHuman[0]);
 			//converted an enemy so lets head towards a restpoint
 			std::vector<Tile> closestStructure = find_closest_shelter(converter);
@@ -412,7 +419,6 @@ bool AI::converter_turn(Unit& converter){
 				}
 				return true;
 			}
-		}
 	}
 	return false;
 }
