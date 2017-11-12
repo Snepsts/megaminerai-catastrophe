@@ -94,6 +94,11 @@ public:
 	bool fresh_turn(Unit& unit);
 	bool is_adj_to_cat(const Tile& tile);
 	bool choose_job(Unit& unit);
+	std::vector<Tile> find_full_deposit(Unit& unit);
+	std::vector<Tile> find_closest_deposit(Unit& unit);
+	std::vector<Tile> find_nearest_empty_tile(Unit& unit);
+	std::vector<Tile> find_closest_structure(Unit& unit);
+	bool builder_turn(Unit& unit);
 	bool defender_turn(Unit& unit);
 	std::vector<Tile> find_closest_enemy_defender(Unit& unit);
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
