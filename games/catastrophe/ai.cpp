@@ -482,7 +482,7 @@ bool AI::soldier_turn(Unit& unit)
 
 void AI::mover(Unit& unit, std::vector<Tile> path)
 {
-	while((unit->moves > 0) && (path.size() > 1)) {
+	if((unit->moves > 0) && (path.size() > 1)) {
 		unit->move(path[0]);
 	}
 }
