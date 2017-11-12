@@ -844,6 +844,22 @@ bool AI::builder_turn(Unit& unit){
 
 bool AI::choose_job(Unit& unit)
 {
+	int enemy_soldier_count = 0;
+	int player_soldier_count = 0;
+	auto loser_units = player->opponent->units;
+	auto player_units = player->units;
+
+	for (auto unit : loser_units) {
+		if (unit->job->title == "soldier") {
+			enemy_soldier_count++;
+		}
+	}
+
+	for (auto unit : player_units) {
+		if (unit->job->title == "soldier") {
+			player_soldier_count++;
+		}
+	}
 	cout << "Choosing job." << endl;
 
 	if (death_squad) {
@@ -854,7 +870,6 @@ bool AI::choose_job(Unit& unit)
 		}
 	}
 
-	auto player_units = player->units;
 	int builders = 0, soldiers = 0, missionaries = 0, gatherers = 0;
 
 	for (auto unit : player_units) {
@@ -871,6 +886,9 @@ bool AI::choose_job(Unit& unit)
 	if (missionaries < 1 || missionaries < soldiers / 3) {
 		cout << "Choosing missionary" << endl;
 		return unit->change_job("missionary");
+	} else if(enemy_soldier_count+1 > player_soldier_count){
+		cout << "They have soldier's choose soldier" << endl;
+		return unit->change_job("soldier");
 	} else if (gatherers < 1) {
 		cout << "Choosing gatherer" << endl;
 		return unit->change_job("gatherer");
