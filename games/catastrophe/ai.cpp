@@ -98,7 +98,7 @@ bool AI::run_turn()
 				}
 				else if (counter == 1)
 				{
-					if (unit->change_job("builder"))
+					if (unit->change_job("gatherer"))
 					{
 						cout << "builder is the Correct Name." << endl;
 						counter++;
@@ -132,6 +132,9 @@ bool AI::run_turn()
 		}
 		if (unit->job->title == "missionary"){
 			converter_turn(unit);
+		}
+		if(unit->job->title == "gatherer"){
+			gatherer_turn(unit);
 		}
 	}
 
@@ -507,6 +510,87 @@ bool AI::soldier_turn(Unit& unit){
 		}
 	}
 	return false; // some issue
+}
+
+void AI::mover(Unit& unit, std::vector<Tile> path){
+	while((unit->moves > 0) && (path.size() > 1)){
+		unit->move(path[0]);
+	}
+}
+
+std::vector<Tile> AI::find_closest_food(const Unit& unit){
+	//return the shortest path to a gatherable structure, or a empty vector if theres nothing
+	std::vector<std::vector<Tile> > possible_paths;
+	std::vector<Tile> nodes_to_try;
+	for(auto q : game->tiles){
+		if(q->harvest_rate > 0){
+			nodes_to_try.push_back(q);
+		}
+	}
+	for(auto q : nodes_to_try){
+		std::vector<Tile> temp = AI::find_path(unit->tile, q);
+		if(!temp.empty())
+			possible_paths.push_back(temp);
+	}
+	if (possible_paths.empty()){
+		return nodes_to_try;
+	}
+	int size = possible_paths[0].size();
+	int index = 0;
+	for(int i = 0; i < possible_paths.size(); ++i){
+		if(possible_paths[i].size() < size){
+			size = possible_paths[i].size();
+			index = i;
+		}
+	}
+	return possible_paths[index];
+}
+
+bool AI::gatherer_turn(Unit& unit){
+	//if storage is full or energy is low return and deposit food
+	if ((unit->materials >= 100) || (unit->energy < 75.0)){
+		std::vector<Tile> closestShelter = find_closest_shelter(unit);
+		while((closestShelter.size() > 1) && (unit->moves > 0)){
+			mover(unit, closestShelter);
+			closestShelter = find_closest_shelter(unit);
+		}
+		if(closestShelter.size() == 1){ //if we are at the shelter
+			if(unit->materials > 0){//drop the materials if we have any
+				unit->drop(closestShelter[0], "food", 0);
+			}
+			if(unit->energy < 75.0){//rest if we need to
+				unit->rest();
+				return true;
+			}
+		}
+	}
+
+	//hunt for food to gather
+	std::vector<Tile> foodSource = find_closest_food(unit);
+	while((foodSource.size() > 1) && (unit->moves > 0)){
+		mover(unit, foodSource);
+		foodSource = find_closest_food(unit);
+	}
+	if(foodSource.size() > 1){//if we are at the food source
+		if(unit->acted) //we cant act for whatever reason
+			return true;
+		else{
+			unit->harvest(foodSource[0]);
+			if(unit->moves > 0){//if we can lets start back towards the shelter
+				std::vector<Tile> closestShelter = find_closest_shelter(unit);
+				while((closestShelter.size() > 1) && (unit->moves > 0)){
+					mover(unit, closestShelter);
+					closestShelter = find_closest_shelter(unit);
+				}
+				if(closestShelter.size() == 1){//we made it to a shelter
+					unit->drop(closestShelter[0], "food", 0);
+					unit->rest();
+				}
+				return true;
+			}
+		}
+	}
+	return false; //something went wrong
 }
 
 void AI::warrior_turn(const Unit& unit)
