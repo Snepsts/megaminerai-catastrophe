@@ -41,6 +41,7 @@ public:
     Player player;
 
 	bool first_turn = true;
+	bool death_squad = false;
 
     //<<-- Creer-Merge: class variables -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // You can add additional class variables here.
@@ -101,6 +102,9 @@ public:
 	bool builder_turn(Unit& unit);
 	bool defender_turn(Unit& unit);
 	std::vector<Tile> find_closest_enemy_defender(Unit& unit);
+	bool death_squad_turn(Unit& unit);
+	std::vector<Tile> find_enemy_cat(Unit& unit);
+
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
 /// <param name="start">the starting Tile</param>
 /// <param name="goal">the goal Tile</param>

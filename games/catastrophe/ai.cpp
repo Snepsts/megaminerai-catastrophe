@@ -112,35 +112,61 @@ bool AI::run_turn()
 		first_turn = false;
 	}
 
-	//grab all units
-	auto player_units = player->units;
-	int soldier_count = 0;
+	//grab all enemy units
+	int enemy_soldier_count = 0;
+	auto loser_units = player->opponent->units;
 
-	for (auto unit : player_units) {
+	for (auto unit : loser_units) {
 		if (unit->job->title == "soldier") {
-			soldier_count++;
+			enemy_soldier_count++;
 		}
 	}
 
-	bool is_protected = false;
+	if (enemy_soldier_count < 1) {
+		death_squad = true;
+	}
 
-	for (auto unit : player_units) {
-		if (unit->job->title == "soldier" && soldier_count > 1 && !is_protected) {
-			defender = unit;
-			defender_turn(unit);
-			is_protected = true;
+	if (death_squad) { //call in the helicopters
+		auto player_units = player->units;
+
+		for (auto unit : player_units) {
+			if (unit->job->title == "missionary") {
+				converter_turn(unit);
+			} else { //FREE HELICOPTER RIDES
+				death_squad_turn(unit);
+			}
 		}
-		if (unit->job->title == "soldier") {
-			soldier_turn(unit);
+	} else {
+		//grab all units
+		auto player_units = player->units;
+		int soldier_count = 0;
+
+		for (auto unit : player_units) {
+			if (unit->job->title == "soldier") {
+				soldier_count++;
+			}
 		}
-		if (unit->job->title == "missionary") {
-			converter_turn(unit);
-		}
-		if(unit->job->title == "gatherer") {
-			gatherer_turn(unit);
-		}
-		if (unit->job->title == "fresh human") {
-			fresh_turn(unit);
+
+		bool is_protected = false;
+
+		for (auto unit : player_units) {
+			if (unit->job->title == "soldier" && soldier_count > 1 && !is_protected) {
+				defender = unit;
+				defender_turn(unit);
+				is_protected = true;
+			}
+			if (unit->job->title == "soldier") {
+				soldier_turn(unit);
+			}
+			if (unit->job->title == "missionary") {
+				converter_turn(unit);
+			}
+			if(unit->job->title == "gatherer") {
+				gatherer_turn(unit);
+			}
+			if (unit->job->title == "fresh human") {
+				fresh_turn(unit);
+			}
 		}
 	}
 
@@ -759,6 +785,15 @@ bool AI::builder_turn(Unit& unit){
 bool AI::choose_job(Unit& unit)
 {
 	cout << "Choosing job." << endl;
+
+	if (death_squad) {
+		cout << "DEATH SQUAD INITATED, CHOOSE SOLDIER." << endl;
+		if (!unit->change_job("soldier")) {
+			cout << "NOT ENOUGH ENERGY. REST AND THEN DESTROY." << endl;
+			unit->rest();
+		}
+	}
+
 	auto player_units = player->units;
 	int builders = 0, soldiers = 0, missionaries = 0, gatherers = 0;
 
@@ -867,6 +902,39 @@ std::vector<Tile> AI::find_closest_enemy_defender(Unit& unit)
 	}
 
 	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_enemy_cat(Unit& unit)
+{
+	return find_path(unit->tile, player->opponent->cat->tile);
+}
+
+bool AI::death_squad_turn(Unit& unit)
+{
+	if (unit->job->title == "soldier") {
+		auto path_to_commie = find_enemy_cat(unit);
+
+		if (path_to_commie.size() == 0) { //cat is blocked off
+			std::vector<Tile> closestEnemy = find_closest_enemy(unit);
+
+			if (closestEnemy.empty()) {
+				std::cout << "error no enemy, death_squad turn" << endl;
+				return false; // no enemy so what do you want to do?
+			} else {
+				while ((closestEnemy.size()) > 1 && (unit->moves > 0)) {
+					mover(unit, closestEnemy);
+					closestEnemy = find_closest_enemy(unit);
+				}
+				if (closestEnemy.size() == 1) {
+					unit->attack(closestEnemy[0]);
+				}
+				return true;
+			}
+		}
+		return false; // some issue
+	} else {
+		return fresh_turn(unit);
+	}
 }
 
 } // catastrophe
