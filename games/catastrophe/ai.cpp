@@ -313,11 +313,12 @@ bool AI::converter_turn(Unit& converter)
 			converter->rest();
 			return true;
 		} else {
-			while((!closestStructure.empty()) && (converter->moves > 0)) {
-				auto iter = closestStructure.begin();
-				converter->move(*iter);
-				closestStructure.erase(iter);
-
+			while((closestStructure.size() > 1) && (converter->moves > 0)) {
+				mover(converter, closestStructure);
+				closestStructure = find_closest_shelter(converter);
+			}
+			if(closestStructure.size() == 1){
+				converter->rest();
 			}
 			return true;
 		}
@@ -331,15 +332,17 @@ bool AI::converter_turn(Unit& converter)
 		//so follow soilder instead
 		std::vector<Tile> soldierToFollow = find_closest_soldier(converter);
 		if (soldierToFollow.size() == 1) {
+			std::cout << "already at soldier" << endl;
 			//already at soldier
 			return true;
 		}
 		if ((soldierToFollow.size() > 1) && (converter->moves > 0)) { //move towards soldier
-			while((!soldierToFollow.empty()) && (converter->moves > 0)) {
-				auto iter = soldierToFollow.begin();
-				converter->move(*iter);
-				soldierToFollow.erase(iter);
+			std::cout << "Try to move towards soldier" << endl;
+			while((soldierToFollow.size() > 1) && (converter->moves > 0)) {
+				mover(converter, soldierToFollow);
+				soldierToFollow = find_closest_soldier(converter);
 			}
+			std::cout << "At soilder, or moved as far as possible" << endl;
 			return true;
 		} else {
 			return false; //no soldier so what do we want to do?
@@ -347,11 +350,9 @@ bool AI::converter_turn(Unit& converter)
 	} else { // enemy close enough to convert
 		std::cout << "Going to convert neutral human, converter turn" << endl;
 		while((closestNeutralHuman.size() > 1) && (converter->moves > 0)) { //move to the neutralHumans
-			auto iter = closestNeutralHuman.begin();
-			converter->move(*iter);
-			closestNeutralHuman.erase(iter);
+			mover(converter, closestNeutralHuman);
+			closestNeutralHuman = find_closest_neutral_human(converter);
 		}
-
 		converter->convert(closestNeutralHuman[0]);
 		//converted an enemy so lets head towards a restpoint
 		std::vector<Tile> closestStructure = find_closest_shelter(converter);
@@ -405,7 +406,8 @@ std::vector<Tile> AI::find_closest_helper(const std::vector<Tile>& nodes_to_try,
 	}
 
 	if (possible_paths.empty()) {
-		return nodes_to_try;
+		std::vector<Tile> temp;
+		return temp;
 	}
 
 	unsigned size = possible_paths[0].size();
@@ -438,11 +440,13 @@ bool AI::soldier_turn(Unit& unit)
 			return true;
 		} else {
 			std::cout << "Moving to shelter, to rest soldier turn" << endl;
-			while((!closestStructure.empty()) && (unit->moves > 0)) {
-				auto iter = closestStructure.begin();
-				unit->move(*iter);
-				closestStructure.erase(iter);
+			while((closestStructure.size() > 1) && (unit->moves > 0)) {
+				mover(unit, closestStructure);
+				closestStructure = find_closest_shelter(unit);
 
+			}
+			if(closestStructure.size() == 1){
+				unit->rest();
 			}
 			return true;
 		}
