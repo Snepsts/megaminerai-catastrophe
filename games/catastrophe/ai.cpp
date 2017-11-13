@@ -263,167 +263,198 @@ std::vector<Tile> AI::find_path(const Tile& start, const Tile& goal)
 //<<-- Creer-Merge: methods -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
 // You can add additional methods here for your AI to call
 //<<-- /Creer-Merge: methods -->>
-std::vector<Tile> AI::shortest_path_to_materials(const Unit& unit)
-{
-	//return the shortest path to a gatherable structure, or a empty vector if theres nothing
-	std::vector<std::vector<Tile> > possible_paths;
-	std::vector<Tile> nodes_to_try;
 
+////////////////////////////////////////////////////////////////////
+//Finder functions:
+//These functions make use of the predefined find_path function and
+//a "filter" that was defined by us in order to return the shortest
+//path to whatever the AI is currently searching for
+////////////////////////////////////////////////////////////////////
+
+std::vector<Tile> AI::shortest_path_to_materials(const Unit& unit)
+//return the shortest path to a gatherable neutral structure we
+//can take materials from or a empty vector if theres nothing
+{
+	std::vector<Tile> nodes_to_try;
 	for (auto q : game->tiles) {
 		if ((q->structure != NULL) && (q->structure->type == "neutral")) {
-			nodes_to_try.push_back(q);
+			Tile temp = q;
+			nodes_to_try.push_back(temp);
 		}
 	}
-
 	return find_closest_helper(nodes_to_try, unit);
 }
 
 std::vector<Tile> AI::find_closest_shelter(const Unit& unit)
+//return the shortest path to a shelter owned by us, or a empty vector if theres nothing
 {
-	//return the shortest path to a structure, or a empty vector if theres nothing
-	std::vector<std::vector<Tile> > possible_paths;
 	std::vector<Tile> nodes_to_try;
-	std::vector<Structure> playerShelters;
-
 	for (auto q : player->structures) {
 		if (q->type == "shelter") {
-			playerShelters.push_back(q);
+			Tile temp = q->tile;
+			nodes_to_try.push_back(temp);
 		}
 	}
-
-	for (auto q : playerShelters) {
-		Tile temp = q->tile;
-		nodes_to_try.push_back(temp);
-	}
-
 	return find_closest_helper(nodes_to_try, unit);
 }
 
 std::vector<Tile> AI::find_closest_neutral_human(const Unit& unit)
+//return the shortest path to a neutral unowned unit, or a empty vector if theres nothing
 {
-	//return the shortest path to a neutral, or a empty vector if theres nothing
 	std::vector<Tile> nodes_to_try;
-	std::vector<Unit> neutralHumans;
-
 	for (auto q : game->units) {
 		if (q->owner == NULL) {
-			neutralHumans.push_back(q);
+			Tile temp = q->tile;
+			nodes_to_try.push_back(temp);
 		}
 	}
-	for (auto q : neutralHumans) {
-		Tile temp = q->tile;
-		nodes_to_try.push_back(temp);
-	}
-
 	return find_closest_helper(nodes_to_try, unit);
 }
 
 std::vector<Tile> AI::find_closest_soldier(const Unit& unit)
+//return the shortest path to a soldier, or a empty vector if theres nothing
 {
-	//return the shortest path to a soldier, or a empty vector if theres nothing
-	std::vector<std::vector<Tile> > possible_paths;
 	std::vector<Tile> nodes_to_try;
-	std::vector<Unit> ourSoldiers;
 	for (auto q : player->units) {
 		if (q->job->title == "soldier" && q != defender) {
-			ourSoldiers.push_back(q);
-		}
-	}
-	for (auto q : ourSoldiers) {
 			Tile temp = q->tile;
 			nodes_to_try.push_back(temp);
 		}
-
+	}
 	return find_closest_helper(nodes_to_try, unit);
 }
 
-bool AI::converter_turn(Unit& converter)
+std::vector<Tile> AI::find_closest_enemy(const Unit& unit)
+//return the shortest path to a soldier, or a empty vector if theres nothing
 {
-	if (converter->energy < 75.0) { //not enough energy so try to rest by moving to a rest point
-		std::vector<Tile> closestStructure = find_closest_shelter(converter);
-
-		if (closestStructure.size() == 0) {
-			closestStructure = find_path(converter->tile, player->cat->tile);
-			//no structure sooooo what do we want to do?
-		}
-
-		if (closestStructure.size() == 1) {
-			converter->rest();
-			return true;
-		} else {
-			while((closestStructure.size() > 1) && (converter->moves > 0)) {
-				mover(converter, closestStructure);
-				closestStructure = find_closest_shelter(converter);
-			}
-			if (closestStructure.size() == 1) {
-				converter->rest();
-			}
-			return true;
-		}
+	std::vector<Tile> nodes_to_try;
+	for (auto q : player->opponent->units) {
+			Tile temp = q->tile;
+			nodes_to_try.push_back(temp);
 	}
-
-	//energy higher than 75 so lets try to convert a enemy
-	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(converter);
-	if (closestNeutralHuman.empty()) { //no neutral enemies, so follow soilder instead
-		std::vector<Tile> soldierToFollow = find_closest_soldier(converter);
-		if (soldierToFollow.size() == 1) { //already at soldier
-			return true;
-		}
-		if ((soldierToFollow.size() > 1) && (converter->moves > 0)) { //move towards soldier
-			while((soldierToFollow.size() > 1) && (converter->moves > 0)) {
-				mover(converter, soldierToFollow);
-				soldierToFollow = find_closest_soldier(converter);
-			}
-			//at soilder, or moved as far as possible
-			return true;
-		} else {
-			return false; //no soldier so what do we want to do?
-		}
-	} else { //neutral enemy to convert
-		while((closestNeutralHuman.size() > 1) && (converter->moves > 0)) { //move to the neutral humans
-			mover(converter, closestNeutralHuman);
-			closestNeutralHuman = find_closest_neutral_human(converter);
-		}
-		if (closestNeutralHuman.size() == 1) {
-			converter->convert(closestNeutralHuman[0]);
-			Unit temp = game->get_tile_at(closestNeutralHuman[0]->x, closestNeutralHuman[0]->y)->unit;
-			fresh_turn(temp);
-		}
-		//converted an enemy so lets head towards a restpoint
-		std::vector<Tile> closestStructure = find_closest_shelter(converter);
-		if (closestStructure.size() == 0) {
-			closestStructure = find_path(converter->tile, player->cat->tile);
-			//No structure sooooo what do we want to do?
-		}
-		if (closestStructure.size() == 1) { //rest by structure
-			converter->rest();
-			return true;
-		} else {
-			while((closestStructure.size() > 1) && (converter->moves > 0)) { //move to structure
-				mover(converter, closestStructure);
-				closestStructure = find_closest_shelter(converter);
-			}
-			if (closestStructure.size() == 1) { //rest
-				converter->rest();
-			}
-			return true;
-		}
-	}
-	return false;
+	return find_closest_helper(nodes_to_try, unit);
 }
 
-std::vector<Tile> AI::find_closest_enemy(const Unit& unit)
+std::vector<Tile> AI::find_closest_food(const Unit& unit)
+//return the shortest path to a gatherable food bush, or a empty vector if theres nothing
 {
-	//return the shortest path to a soldier, or a empty vector if theres nothing
 	std::vector<Tile> nodes_to_try;
-	std::vector<Unit> enemies;
-
-	for (auto q : player->opponent->units) {
-			enemies.push_back(q);
+	for (auto q : game->tiles) {
+		if ((q->harvest_rate > 0) && (q->turns_to_harvest == 0)) {
+			Tile temp = q;
+			nodes_to_try.push_back(temp);
+		}
 	}
+	return find_closest_helper(nodes_to_try, unit);
+}
 
-	for (auto q : enemies) {
-		Tile temp = q->tile;
+std::vector<Tile> AI::find_full_deposit(const Unit& unit)
+//return the shortest path to a tile with enough materials on it to build a shelter, or a empty vector if theres nothing
+{
+	std::vector<Tile> nodes_to_try;
+	for (auto q : game->tiles) {
+		if ((q->materials >= 50) && (q->structure == NULL)) {
+			Tile temp = q;
+			nodes_to_try.push_back(temp);
+		}
+	}
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_closest_deposit(const Unit& unit)
+//find the closest tile with materials dropped on it
+{
+	std::vector<Tile> nodes_to_try;
+	for (auto q : game->tiles) {
+		if ((q->materials > 0) && (q->structure == NULL)) {
+			Tile temp = q;
+			nodes_to_try.push_back(temp);
+		}
+	}
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_closest_empty_tile(const Unit& unit)
+//find the closest tile that is free of units and structures
+{
+	std::vector<Tile> nodes_to_try;
+	for (auto q : game->tiles) {
+		if ((q->is_pathable()) && (q->structure == NULL)) {
+			Tile temp = q;
+			nodes_to_try.push_back(temp);
+		}
+	}
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_closest_structure(const Unit& unit)
+//find the closest neutral structure we can gather from
+{
+	std::vector<Tile> nodes_to_try;
+	for (auto q : game->tiles) {
+		if ((q->structure != NULL) && (q->structure->type == "neutral")) {
+			Tile temp = q;
+			nodes_to_try.push_back(temp);
+		}
+	}
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_closest_enemy_defender(const Unit& unit)
+//find the closest enemy within a limited range, in other words a enemy within the range of a defender
+{
+	std::vector<Tile> nodes_to_try;
+	for (auto q : player->opponent->units) { //grab a list of enemies
+			if(is_adj_to_cat(q->tile)) {
+				Tile temp = q->tile;
+				nodes_to_try.push_back(temp);
+			}
+	}
+	return find_closest_helper(nodes_to_try, unit);
+}
+
+std::vector<Tile> AI::find_enemy_cat(const Unit& unit)
+//don't judge this was written on no sleep, it lets us attack while moving to the cat
+{
+	std::vector<Tile> nodes_to_try;
+	std::vector<Tile> tilesToTry;
+	tilesToTry.push_back(player->opponent->cat->tile);
+	Tile Ntile = player->opponent->cat->tile->tile_north;
+	Tile Stile = player->opponent->cat->tile->tile_south;
+	Tile Etile = player->opponent->cat->tile->tile_east;
+	Tile Wtile = player->opponent->cat->tile->tile_west;
+	bool ourNUnit = false;
+	bool ourSUnit = false;
+	bool ourEUnit = false;
+	bool ourWUnit = false;
+	for (auto q : player->units) {
+		if ((Ntile != NULL) && (q == Ntile->unit)) {
+			ourNUnit = true;
+		}
+		if ((Stile != NULL) && (q == Stile->unit)) {
+			ourSUnit = true;
+		}
+		if ((Etile != NULL) && (q == Etile->unit)) {
+			ourEUnit = true;
+		}
+		if ((Wtile != NULL) && (q == Wtile->unit)) {
+			ourWUnit = true;
+		}
+	}
+	if ((Ntile != NULL) && (!ourNUnit) && (Ntile->unit != NULL)) {
+		tilesToTry.push_back(player->opponent->cat->tile->tile_north);
+	}
+	if ((Stile != NULL) && (!ourSUnit) && (Stile->unit != NULL)) {
+		tilesToTry.push_back(player->opponent->cat->tile->tile_south);
+	}
+	if ((Etile != NULL) && (!ourEUnit) && (Etile->unit != NULL)) {
+		tilesToTry.push_back(player->opponent->cat->tile->tile_east);
+	}
+	if ((Wtile != NULL) && (!ourWUnit) && (Wtile->unit != NULL)) {
+		tilesToTry.push_back(player->opponent->cat->tile->tile_west);
+	}
+	for (auto q : tilesToTry) {
+		Tile temp = q;
 		nodes_to_try.push_back(temp);
 	}
 
@@ -431,72 +462,196 @@ std::vector<Tile> AI::find_closest_enemy(const Unit& unit)
 }
 
 std::vector<Tile> AI::find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit)
+//this is called by all of the find_ functions it takes the filted list of acceptable nodes
+//and finds the node thats closest to the given unit, then returns a path to that node
 {
 	std::vector<std::vector<Tile>> possible_paths;
-
 	for (auto q : nodes_to_try) {
 		std::vector<Tile> temp = find_path(unit->tile, q);
 		if (!temp.empty())
 			possible_paths.push_back(temp);
 	}
-
 	if (possible_paths.empty()) {
 		std::vector<Tile> temp;
 		return temp;
 	}
-
 	unsigned size = possible_paths[0].size();
 	int index = 0;
-
 	for (unsigned i = 0; i < possible_paths.size(); ++i) {
 		if (possible_paths[i].size() < size) {
 			size = possible_paths[i].size();
 			index = i;
 		}
 	}
-
 	return possible_paths[index];
+}
+
+/////////////////////////
+//Misc utility functions
+/////////////////////////
+
+void AI::mover(Unit& unit, std::vector<Tile> path)
+//moves the unit one tile forward along the given path
+{
+	if ((unit->moves > 0) && (path.size() > 1)) {
+		unit->move(path[0]);
+	}
+}
+
+bool AI::is_adj_to_cat(const Tile& tile)
+//check if the tile is a tile that is adjacent to our cat
+{
+	return (tile->tile_north == player->cat->tile ||
+	        tile->tile_south == player->cat->tile ||
+	        tile->tile_west == player->cat->tile ||
+	        tile->tile_east == player->cat->tile);
+}
+
+bool AI::choose_job(Unit& unit)
+//allows fresh humans to choose a "job" or class of human
+{
+	int enemy_soldier_count = 0;
+	int player_soldier_count = 0;
+	auto loser_units = player->opponent->units;
+	auto player_units = player->units;
+
+	for (auto unit : loser_units) {
+		if (unit->job->title == "soldier") {
+			enemy_soldier_count++;
+		}
+	}
+
+	for (auto unit : player_units) {
+		if (unit->job->title == "soldier") {
+			player_soldier_count++;
+		}
+	}
+	cout << "Choosing job." << endl;
+
+	if (death_squad) { //intiate death
+		cout << "DEATH SQUAD INITATED, CHOOSE SOLDIER." << endl;
+		if (!unit->change_job("soldier")) {
+			cout << "NOT ENOUGH ENERGY. REST AND THEN DESTROY." << endl;
+			unit->rest();
+		}
+	}
+
+	int builders = 0, soldiers = 0, missionaries = 0, gatherers = 0;
+
+	for (auto unit : player_units) {
+		if (unit->job->title == "builder")
+			builders++;
+		else if (unit->job->title == "soldier")
+			soldiers++;
+		else if (unit->job->title == "missionary")
+			missionaries++;
+		else if (unit->job->title == "gatherer")
+			gatherers++;
+	}
+
+	if (missionaries < 1 || missionaries < soldiers / 3) { //one missionary for every 3 soldiers
+		cout << "Choosing missionary" << endl;
+		return unit->change_job("missionary");
+	} else if (enemy_soldier_count+1 > player_soldier_count) { //more soldiers
+		cout << "They have soldiers choose soldier" << endl;
+		return unit->change_job("soldier");
+	} else if (gatherers < 1) { //need a food source
+		cout << "Choosing gatherer" << endl;
+		return unit->change_job("gatherer");
+	} else if (builders < 1) { //need a shelter builder
+		cout << "Choosing builder" << endl;
+		return unit->change_job("builder");
+	} else { //more soldiers!
+		cout << "Choosing soldier" << endl;
+		return unit->change_job("soldier");
+	}
+
+	return false;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//Turn Functions:
+//These function calls specifiy the actions of the various jobs(or classes) of the units
+/////////////////////////////////////////////////////////////////////////////////////////
+
+bool AI::move_to_shelter_to_rest(Unit& unit)
+//have the unit move to the nearest shelter, and if we make it then rest
+{
+	std::vector<Tile> closestShelter = find_closest_shelter(unit);
+	if (closestShelter.size() == 0) {//error, we dont have a shelter lets move to the cat instead
+		closestShelter = find_path(unit->tile, player->cat->tile);
+	}
+	if (closestShelter.size() == 1) {//we are adjacent a shelter so lets rest
+		unit->rest();
+		return true;
+	} else {//we haven't reached the shelter, lets move towards it
+		while((closestShelter.size() > 1) && (unit->moves > 0)) {
+			mover(unit, closestShelter);
+			closestShelter = find_closest_shelter(unit);
+		}
+		if (closestShelter.size() == 1) {//if we reach the shelter this turn then go ahead and rest
+			unit->rest();
+		}
+		return true;
+	}
+}
+
+bool AI::converter_turn(Unit& unit)
+{
+	if (unit->energy < 75.0) { //not enough energy so try to rest by moving to a rest point
+		return move_to_shelter_to_rest(unit);
+	}
+
+	//energy higher than 75 so lets try to convert a enemy
+	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(unit);
+	if (closestNeutralHuman.empty()) { //no neutral enemies to convert, so lets follow a soilder instead
+		std::vector<Tile> soldierToFollow = find_closest_soldier(unit);
+		if (soldierToFollow.size() == 1) {
+			return true; //already at soldier
+		}
+		if ((soldierToFollow.size() > 1) && (unit->moves > 0)) { //move towards soldier
+			while((soldierToFollow.size() > 1) && (unit->moves > 0)) {
+				mover(unit, soldierToFollow);
+				soldierToFollow = find_closest_soldier(unit);
+			}
+			return true; //at soilder, or moved as far as possible
+		} else {
+			return false; //error no soldier so what do we want to do?
+		}
+	} else { //neutral enemy to convert
+		while((closestNeutralHuman.size() > 1) && (unit->moves > 0)) { //move to the neutral humans
+			mover(unit, closestNeutralHuman);
+			closestNeutralHuman = find_closest_neutral_human(unit);
+		}
+		if (closestNeutralHuman.size() == 1) {
+			unit->convert(closestNeutralHuman[0]);
+			Unit temp = game->get_tile_at(closestNeutralHuman[0]->x, closestNeutralHuman[0]->y)->unit;
+			fresh_turn(temp);
+		}
+		//converted an enemy so lets head towards a restpoint
+		return move_to_shelter_to_rest(unit);
+	}
+	return false; //error something went wrong the turn couldn't finish
 }
 
 bool AI::soldier_turn(Unit& unit)
 {
 	if (unit->energy <= 25.0) {//not enough energy so lets go rest
-		std::vector<Tile> closestStructure = find_closest_shelter(unit);
-
-		if (closestStructure.size() == 0) {
-			closestStructure = find_path(unit->tile, player->cat->tile);
-			//No structure sooooo what do we want to do?
-		}
-
-		if (closestStructure.size() == 1) { //rest
-			unit->rest();
-			return true;
-		} else { //move to shelter
-			while((closestStructure.size() > 1) && (unit->moves > 0)) {
-				mover(unit, closestStructure);
-				closestStructure = find_closest_shelter(unit);
-
-			}
-			if (closestStructure.size() == 1) {
-				unit->rest();
-			}
-			return true;
-		}
-	} else {
+		move_to_shelter_to_rest(unit);
+	} else {//if we aren't in danger and already resting lets not stop until we are healed
 		std::vector<Tile> closestStructure = find_closest_shelter(unit);
 		if (closestStructure.size() == 1 && unit->energy < 100.0) {
 			std::vector<Tile> closestEnemy = find_closest_enemy(unit);
-			if (closestEnemy.size() != 0 && closestEnemy.size() > 2) {
-				//keep resting
+			if ((closestEnemy.size() != 0 && closestEnemy.size() > 2) || unit->energy <= 75) { //if we aren't in danger or if the unit energy is too low to do anything anyway then rest
 				unit->rest();
+				return true;
 			}
 		}
-		//have energy lets hunt for a enemy
+		//have energy or we are in danger lets hunt for a enemy
 		std::vector<Tile> closestEnemy = find_closest_enemy(unit);
-
 		if (closestEnemy.empty()) {
-			return false; //no enemy so what do you want to do?
-		} else {
+			return false; //error no enemy on the map, we don't know what to do
+		} else {//move to and attack the closest enemy
 			while((closestEnemy.size()) > 1 && (unit->moves > 0)) {
 				mover(unit, closestEnemy);
 				closestEnemy = find_closest_enemy(unit);
@@ -507,45 +662,7 @@ bool AI::soldier_turn(Unit& unit)
 			return true;
 		}
 	}
-	return false; // some issue
-}
-
-void AI::mover(Unit& unit, std::vector<Tile> path)
-{
-	if ((unit->moves > 0) && (path.size() > 1)) {
-		unit->move(path[0]);
-	}
-}
-
-std::vector<Tile> AI::find_closest_food(const Unit& unit)
-{
-	//return the shortest path to a gatherable structure, or a empty vector if theres nothing
-	std::vector<std::vector<Tile> > possible_paths;
-	std::vector<Tile> nodes_to_try;
-	for (auto q : game->tiles) {
-		if ((q->harvest_rate > 0) && (q->turns_to_harvest == 0)) {
-			nodes_to_try.push_back(q);
-		}
-	}
-	for (auto q : nodes_to_try) {
-		std::vector<Tile> temp = AI::find_path(unit->tile, q);
-		if (!temp.empty())
-			possible_paths.push_back(temp);
-	}
-
-	if (possible_paths.empty()) {
-		return nodes_to_try;
-	}
-
-	unsigned size = possible_paths[0].size();
-	unsigned index = 0;
-	for (unsigned i = 0; i < possible_paths.size(); ++i) {
-		if (possible_paths[i].size() < size) {
-			size = possible_paths[i].size();
-			index = i;
-		}
-	}
-	return possible_paths[index];
+	return false; // error the turn was not able to finish
 }
 
 bool AI::gatherer_turn(Unit& unit)
@@ -554,7 +671,7 @@ bool AI::gatherer_turn(Unit& unit)
 	int temp = unit->food;
 	std::cout << "Carrying " << temp << endl;
 
-	if ((unit->food >= unit->job->carry_limit) || (unit->energy < 75.0)) { //going to return food
+	if ((unit->food >= unit->job->carry_limit) || (unit->energy < 75.0)) { //going to return food or sleep
 		std::vector<Tile> closestShelter = find_closest_shelter(unit);
 		while((closestShelter.size() > 1) && (unit->moves > 0)) {
 			mover(unit, closestShelter);
@@ -570,7 +687,6 @@ bool AI::gatherer_turn(Unit& unit)
 			}
 		}
 	}
-
 	//hunt for food to gather
 	std::vector<Tile> foodSource = find_closest_food(unit);
 	while((foodSource.size() > 1) && (unit->moves > 0)) {
@@ -596,75 +712,6 @@ bool AI::gatherer_turn(Unit& unit)
 		}
 		return false; //something went wrong
 	}
-
-
-std::vector<Tile> AI::find_full_deposit(Unit& unit) {
-	//return the shortest path to a tile with enough materials for a shelter, or a empty vector if theres nothing
-	std::vector<Tile> nodes_to_try;
-	std::vector<Tile> full_deposit;
-
-	for (auto q : game->tiles) {
-		if ((q->materials >= 50) && (q->structure == NULL)) {
-			full_deposit.push_back(q);
-		}
-	}
-
-	for (auto q : full_deposit) {
-		Tile temp = q;
-		nodes_to_try.push_back(temp);
-	}
-
-	return find_closest_helper(nodes_to_try, unit);
-}
-
-std::vector<Tile> AI::find_closest_deposit(Unit& unit) {
-	std::vector<Tile> nodes_to_try;
-	std::vector<Tile> deposit;
-
-	for (auto q : game->tiles) {
-		if ((q->materials > 0) && (q->structure == NULL))
-			deposit.push_back(q);
-		}
-
-	for (auto q : deposit) {
-		Tile temp = q;
-		nodes_to_try.push_back(temp);
-	}
-
-	return find_closest_helper(nodes_to_try, unit);
-}
-
-std::vector<Tile> AI::find_closest_empty_tile(Unit& unit) {
-	std::vector<Tile> nodes_to_try;
-	std::vector<Tile> emptyTiles;
-
-	for (auto q : game->tiles) {
-		if ((q->is_pathable()) && (q->structure == NULL)) {
-			emptyTiles.push_back(q);
-		}
-	}
-
-	for (auto q : emptyTiles) {
-		Tile temp = q;
-		nodes_to_try.push_back(temp);
-	}
-
-	return find_closest_helper(nodes_to_try, unit);
-}
-
-std::vector<Tile> AI::find_closest_structure(Unit& unit)
-{
-	std::vector<Tile> neutralStructures;
-
-	for (auto q : game->tiles) {
-		if ((q->structure != NULL) && (q->structure->type == "neutral")) {
-			Tile temp = q;
-			neutralStructures.push_back(q);
-		}
-	}
-
-	return find_closest_helper(neutralStructures, unit);
-}
 
 bool AI::builder_turn(Unit& unit)
 {
@@ -732,22 +779,7 @@ bool AI::builder_turn(Unit& unit)
 	}
 
 	if (unit->energy < 75.0) { //if energy is low go rest
-		std::vector<Tile> closestShelter = find_closest_shelter(unit);
-		if (closestShelter.size() == 0) {
-			closestShelter = find_path(unit->tile, player->cat->tile);
-			std::cout << "Something went wrong, we can't find any shelters" << endl;
-		}
-
-		while(closestShelter.size() > 1 && unit->moves > 0) { //move to shelter
-			mover(unit, closestShelter);
-			closestShelter = find_closest_shelter(unit);
-		}
-
-		if (closestShelter.size() == 1) { //reached shelter, rest
-			unit->rest();
-			return true;
-		}
-		return true;
+		return move_to_shelter_to_rest(unit);
 	} else { //if we have energy go get materials then deposit
 		std::vector<Tile> closestNeutralStructure = find_closest_structure(unit);
 
@@ -759,22 +791,8 @@ bool AI::builder_turn(Unit& unit)
 		if (closestNeutralStructure.size() == 1) { //at neutral structure
 			if (unit->energy >= 75.0) { //harvest
 				unit->deconstruct(game->get_tile_at(closestNeutralStructure[0]->x, closestNeutralStructure[0]->y));
-
-				std::vector<Tile> closestShelter = find_closest_shelter(unit);
-				if (closestShelter.size() == 0) { //harvested so head towards shelter
-					find_path(unit->tile, player->cat->tile);
-				}
-
-				while(closestShelter.size() > 1 && unit->moves > 0) { //move to shelter
-					mover(unit, closestShelter);
-					closestShelter = find_closest_shelter(unit);
-				}
-
-				if (closestShelter.size() > 1) { //rest by shelter
-					unit->rest();
-					return true;
-				}
-				return true;
+				//harvested so head towards shelter
+				return move_to_shelter_to_rest(unit);
 			} else { //wait till next turn
 				return true;
 			}
@@ -782,69 +800,7 @@ bool AI::builder_turn(Unit& unit)
 			return true;
 		}
 	}
-	return false;
-}
-
-//allows fresh humans to choose a "job" or class of human
-bool AI::choose_job(Unit& unit)
-{
-	int enemy_soldier_count = 0;
-	int player_soldier_count = 0;
-	auto loser_units = player->opponent->units;
-	auto player_units = player->units;
-
-	for (auto unit : loser_units) {
-		if (unit->job->title == "soldier") {
-			enemy_soldier_count++;
-		}
-	}
-
-	for (auto unit : player_units) {
-		if (unit->job->title == "soldier") {
-			player_soldier_count++;
-		}
-	}
-	cout << "Choosing job." << endl;
-
-	if (death_squad) { //intiate death
-		cout << "DEATH SQUAD INITATED, CHOOSE SOLDIER." << endl;
-		if (!unit->change_job("soldier")) {
-			cout << "NOT ENOUGH ENERGY. REST AND THEN DESTROY." << endl;
-			unit->rest();
-		}
-	}
-
-	int builders = 0, soldiers = 0, missionaries = 0, gatherers = 0;
-
-	for (auto unit : player_units) {
-		if (unit->job->title == "builder")
-			builders++;
-		else if (unit->job->title == "soldier")
-			soldiers++;
-		else if (unit->job->title == "missionary")
-			missionaries++;
-		else if (unit->job->title == "gatherer")
-			gatherers++;
-	}
-
-	if (missionaries < 1 || missionaries < soldiers / 3) { //one missionary for every 3 soldiers
-		cout << "Choosing missionary" << endl;
-		return unit->change_job("missionary");
-	} else if (enemy_soldier_count+1 > player_soldier_count) { //more soldiers
-		cout << "They have soldiers choose soldier" << endl;
-		return unit->change_job("soldier");
-	} else if (gatherers < 1) { //need a food source
-		cout << "Choosing gatherer" << endl;
-		return unit->change_job("gatherer");
-	} else if (builders < 1) { //need a shelter builder
-		cout << "Choosing builder" << endl;
-		return unit->change_job("builder");
-	} else { //more soldiers!
-		cout << "Choosing soldier" << endl;
-		return unit->change_job("soldier");
-	}
-
-	return false;
+	return false; //error something went wrong with the turn
 }
 
 bool AI::fresh_turn(Unit& unit)
@@ -870,14 +826,6 @@ bool AI::fresh_turn(Unit& unit)
 	}
 
 	return true;
-}
-
-bool AI::is_adj_to_cat(const Tile& tile)
-{
-	return (tile->tile_north == player->cat->tile ||
-	        tile->tile_south == player->cat->tile ||
-	        tile->tile_west == player->cat->tile ||
-	        tile->tile_east == player->cat->tile);
 }
 
 bool AI::defender_turn(Unit& unit)
@@ -915,73 +863,6 @@ bool AI::defender_turn(Unit& unit)
 	return true;
 }
 
-//find closest enemy but for defenders
-std::vector<Tile> AI::find_closest_enemy_defender(Unit& unit)
-{
-	std::vector<Tile> nodes_to_try;
-	std::vector<Unit> enemies;
-
-	for (auto q : player->opponent->units) { //grab a list of enemies
-			enemies.push_back(q);
-	}
-
-	for (auto q : enemies) { //filter out all enemies not by our cat
-		Tile temp = q->tile;
-		if (is_adj_to_cat(q->tile))
-			nodes_to_try.push_back(temp);
-	}
-
-	return find_closest_helper(nodes_to_try, unit);
-}
-
-//don't judge this was written on no sleep, it lets us attack while moving to the cat
-std::vector<Tile> AI::find_enemy_cat(Unit& unit)
-{
-	std::vector<Tile> nodes_to_try;
-	std::vector<Tile> tilesToTry;
-	tilesToTry.push_back(player->opponent->cat->tile);
-	Tile Ntile = player->opponent->cat->tile->tile_north;
-	Tile Stile = player->opponent->cat->tile->tile_south;
-	Tile Etile = player->opponent->cat->tile->tile_east;
-	Tile Wtile = player->opponent->cat->tile->tile_west;
-	bool ourNUnit = false;
-	bool ourSUnit = false;
-	bool ourEUnit = false;
-	bool ourWUnit = false;
-	for (auto q : player->units) {
-		if ((Ntile != NULL) && (q == Ntile->unit)) {
-			ourNUnit = true;
-		}
-		if ((Stile != NULL) && (q == Stile->unit)) {
-			ourSUnit = true;
-		}
-		if ((Etile != NULL) && (q == Etile->unit)) {
-			ourEUnit = true;
-		}
-		if ((Wtile != NULL) && (q == Wtile->unit)) {
-			ourWUnit = true;
-		}
-	}
-	if ((Ntile != NULL) && (!ourNUnit) && (Ntile->unit != NULL)) {
-		tilesToTry.push_back(player->opponent->cat->tile->tile_north);
-	}
-	if ((Stile != NULL) && (!ourSUnit) && (Stile->unit != NULL)) {
-		tilesToTry.push_back(player->opponent->cat->tile->tile_south);
-	}
-	if ((Etile != NULL) && (!ourEUnit) && (Etile->unit != NULL)) {
-		tilesToTry.push_back(player->opponent->cat->tile->tile_east);
-	}
-	if ((Wtile != NULL) && (!ourWUnit) && (Wtile->unit != NULL)) {
-		tilesToTry.push_back(player->opponent->cat->tile->tile_west);
-	}
-	for (auto q : tilesToTry) {
-		Tile temp = q;
-		nodes_to_try.push_back(temp);
-	}
-
-	return find_closest_helper(nodes_to_try, unit);
-}
-
 bool AI::death_squad_turn(Unit& unit)
 {
 	if ((unit->job->title == "soldier") && (unit->energy > 25))  {
@@ -1012,29 +893,10 @@ bool AI::death_squad_turn(Unit& unit)
 				unit->attack(game->get_tile_at(path_to_enemy_cat[0]->x, path_to_enemy_cat[0]->y));
 			}
 		}
-	} else { //let's heal
-		if (unit->job->title == "soldier") {
-			std::vector<Tile> closestStructure = find_closest_shelter(unit);
-
-			if (closestStructure.size() == 0) {
-				closestStructure = find_path(unit->tile, player->cat->tile);
-				//no structure so run back to cat
-			}
-
-			if (closestStructure.size() == 1) { //resting
-				unit->rest();
-				return true;
-			} else { //move to shelter to rest
-				while((closestStructure.size() > 1) && (unit->moves > 0)) {
-					mover(unit, closestStructure);
-					closestStructure = find_closest_shelter(unit);
-				}
-				if (closestStructure.size() == 1) {
-					unit->rest();
-				}
-				return true;
-			}
-		} else {
+	} else {
+		if (unit->job->title == "soldier") { //let's heal
+			return move_to_shelter_to_rest(unit);
+		} else { //go turn into a soldier!
 			return fresh_turn(unit);
 		}
 	}
