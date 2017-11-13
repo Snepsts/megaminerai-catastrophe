@@ -569,11 +569,6 @@ bool AI::choose_job(Unit& unit)
 	return false;
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-//Turn Functions:
-//These function calls specifiy the actions of the various jobs(or classes) of the units
-/////////////////////////////////////////////////////////////////////////////////////////
-
 bool AI::move_to_shelter_to_rest(Unit& unit)
 //have the unit move to the nearest shelter, and if we make it then rest
 {
@@ -595,6 +590,11 @@ bool AI::move_to_shelter_to_rest(Unit& unit)
 		return true;
 	}
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////
+//Turn Functions:
+//These function calls specifiy the actions of the various jobs(or classes) of the units
+/////////////////////////////////////////////////////////////////////////////////////////
 
 bool AI::converter_turn(Unit& unit)
 {
@@ -896,7 +896,7 @@ bool AI::death_squad_turn(Unit& unit)
 	} else {
 		if (unit->job->title == "soldier") { //let's heal
 			return move_to_shelter_to_rest(unit);
-		} else { //go turn into a soldier!
+		} else { //go turn into a soldier
 			return fresh_turn(unit);
 		}
 	}
