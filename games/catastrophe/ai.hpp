@@ -80,30 +80,43 @@ public:
     // <<-- Creer-Merge: methods -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
     // You can add additional methods here.
     // <<-- /Creer-Merge: methods -->>
+
+	//builder code
+	bool builder_turn(Unit& unit);
 	std::vector<Tile> shortest_path_to_materials(const Unit& unit);
-	//bool builder_turn(Unit& builder);
-	std::vector<Tile> find_closest_shelter(const Unit& unit);
-	std::vector<Tile> find_closest_neutral_human(const Unit& unit);
-	std::vector<Tile> find_closest_soldier(const Unit& unit);
-	std::vector<Tile> find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit);
-	bool converter_turn(Unit& converter);
-	bool soldier_turn(Unit& unit);
-	std::vector<Tile> find_closest_enemy(const Unit& unit);
+	std::vector<Tile> find_closest_structure(Unit& unit);
+	std::vector<Tile> find_closest_empty_tile(Unit& unit);
+
+	//gatherer code
 	bool gatherer_turn(Unit& unit);
-	std::vector<Tile> find_closest_food(const Unit& unit);
-	void mover(Unit& unit, std::vector<Tile> path);
-	bool fresh_turn(Unit& unit);
-	bool is_adj_to_cat(const Tile& tile);
-	bool choose_job(Unit& unit);
 	std::vector<Tile> find_full_deposit(Unit& unit);
 	std::vector<Tile> find_closest_deposit(Unit& unit);
-	std::vector<Tile> find_nearest_empty_tile(Unit& unit);
-	std::vector<Tile> find_closest_structure(Unit& unit);
-	bool builder_turn(Unit& unit);
-	bool defender_turn(Unit& unit);
+	std::vector<Tile> find_closest_food(const Unit& unit);
+
+	//soldier code
+	bool soldier_turn(Unit& unit);
+	std::vector<Tile> find_closest_enemy(const Unit& unit);
+	bool defender_turn(Unit& unit); //to counter zerg rushes
 	std::vector<Tile> find_closest_enemy_defender(Unit& unit);
-	bool death_squad_turn(Unit& unit);
+
+	//missionary code
+	bool converter_turn(Unit& converter);
+	std::vector<Tile> find_closest_neutral_human(const Unit& unit);
+	std::vector<Tile> find_closest_soldier(const Unit& unit);
+
+	//fresh human code
+	bool fresh_turn(Unit& unit);
+	bool choose_job(Unit& unit);
+
+	//death squad code
+	bool death_squad_turn(Unit& unit); //to relentlessly attack the enemy
 	std::vector<Tile> find_enemy_cat(Unit& unit);
+
+	//helper code or all unit code
+	std::vector<Tile> find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit);
+	void mover(Unit& unit, std::vector<Tile> path);
+	std::vector<Tile> find_closest_shelter(const Unit& unit);
+	bool is_adj_to_cat(const Tile& tile);
 
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
 /// <param name="start">the starting Tile</param>
