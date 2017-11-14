@@ -113,6 +113,8 @@ public:
 	std::vector<Tile> find_enemy_cat(const Unit& unit);
 
 	//helper code or all unit code
+	bool death_squad_check();
+	void run_first_turn();
 	std::vector<Tile> find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit);
 	void mover(Unit& unit, std::vector<Tile> path);
 	std::vector<Tile> find_closest_shelter(const Unit& unit);

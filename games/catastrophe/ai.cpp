@@ -68,69 +68,75 @@ void AI::ended(bool won, const std::string& reason)
 /// This is called every time it is this AI.player's turn.
 /// </summary>
 /// <returns>Represents if you want to end your turn. True means end your turn, False means to keep your turn going and re-call this function.</returns>
-bool AI::run_turn()
+
+void AI::run_first_turn()
+//Sets up the jobs for the 3 units that the game allows us to start with
 {
-    // <<-- Creer-Merge: runTurn -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
-    // Put your game logic here for run_turn here
-	cout << "Running turn." << endl;
-
-	if (first_turn) { //NOTE: We had to do this for the first turn because start does not wait until the game begins.
-		auto player_units = player->units;
-
-		int counter = 0;
-
-		for (auto unit : player_units) {
-			if (unit->job->title == "cat overlord") {
-				cout << "Reached cat" << endl; //do nothing
-			} else {
-				if (counter == 0) { //first cat will be missionary
-					if (unit->change_job("missionary")) {
-						counter++;
-					}
-				} else if (counter == 1) {
-					if (unit->change_job("soldier")) {
-						counter++;
-					}
-				} else { //counter == 2
-					if (unit->change_job("soldier")) {
-						counter++;
-					}
+	auto player_units = player->units;
+	int counter = 0;
+	for (auto unit : player_units) {
+		if (unit->job->title == "cat overlord") {
+			cout << "Reached cat" << endl; //do nothing
+		} else {
+			if (counter == 0) { //first cat will be missionary
+				if (unit->change_job("missionary")) {
+					counter++;
+				}
+			} else if (counter == 1) {
+				if (unit->change_job("soldier")) {
+					counter++;
+				}
+			} else { //counter == 2
+				if (unit->change_job("soldier")) {
+					counter++;
 				}
 			}
 		}
-
-		first_turn = false;
 	}
+}
 
+bool AI::death_squad_check()
+//these conditions specify if we should trigger our "death squads" there was no coming back from this and was the last strategy our AI would deploy
+{
 	//grab all enemy units
 	int enemy_soldier_count = 0;
 	int player_soldier_count = 0;
-	auto loser_units = player->opponent->units;
+	auto loser_units = player->opponent->units; //vector of enemy units
+	auto player_units = player->units; //vector of our units
 
 	for (auto unit : loser_units) {
 		if (unit->job->title == "soldier") {
 			enemy_soldier_count++;
 		}
 	}
-
 	if (enemy_soldier_count < 1 && game->current_turn >= 20) {
-		death_squad = true;
+		return true;
 	}
-
-	auto player_units = player->units;
 
 	for (auto unit : player_units) {
 		if (unit->job->title == "soldier") {
 			player_soldier_count++;
 		}
 	}
-
 	//NOTE: This code is wrong, it should have been if their soldier count is less than 2
 	if (enemy_soldier_count < player_soldier_count-1 && game->current_turn >= 20) {
-		death_squad = true;
+		return true;
+	}
+	return false;
+}
+
+bool AI::run_turn()
+{
+    // <<-- Creer-Merge: runTurn -->> - Code you add between this comment and the end comment will be preserved between Creer re-runs.
+    // Put your game logic here for run_turn here
+	cout << "Running turn." << endl;
+	//if its the first turn then set up our starting units
+	if(first_turn) {  //NOTE: We had to do this for the first turn because start does not wait until the game begins.
+		run_first_turn();
+		first_turn = false;
 	}
 
-	if (death_squad) { //call in the helicopters
+	if (death_squad_check()) { //call in the helicopters
 		auto player_units = player->units;
 
 		for (auto unit : player_units) {
@@ -155,6 +161,7 @@ bool AI::run_turn()
 
 		for (auto unit : player_units) {
 			if (unit->job->title == "soldier" && soldier_count > 1 && !is_protected) {
+				//if we have more than one soldier make sure that atleast one is acting as a defender for the cat instead of attacking
 				defender = unit;
 				defender_turn(unit);
 				is_protected = true;
