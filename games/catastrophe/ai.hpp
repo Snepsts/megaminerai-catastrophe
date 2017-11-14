@@ -110,11 +110,12 @@ public:
 
 	//death squad code
 	bool death_squad_turn(Unit& unit); //to relentlessly attack the enemy
-	std::vector<Tile> find_enemy_cat(const Unit& unit);
+	std::vector<Tile> find_enemy_cat_or_enemy_defender(const Unit& unit);
 
 	//helper code or all unit code
 	bool death_squad_check();
 	void run_first_turn();
+	std::vector<Tile> get_valid_tiles_around_enemy_cat();
 	std::vector<Tile> find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit);
 	void mover(Unit& unit, std::vector<Tile> path);
 	std::vector<Tile> find_closest_shelter(const Unit& unit);

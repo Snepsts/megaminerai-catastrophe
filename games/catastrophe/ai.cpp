@@ -166,6 +166,7 @@ bool AI::run_turn()
 				defender_turn(unit);
 				is_protected = true;
 			}
+			//run logic based off of what job the unit is
 			if (unit->job->title == "soldier") {
 				soldier_turn(unit);
 			}
@@ -420,52 +421,28 @@ std::vector<Tile> AI::find_closest_enemy_defender(const Unit& unit)
 	return find_closest_helper(nodes_to_try, unit);
 }
 
-std::vector<Tile> AI::find_enemy_cat(const Unit& unit)
-//don't judge this was written on no sleep, it lets us attack while moving to the cat
+std::vector<Tile> AI::find_enemy_cat_or_enemy_defender(const Unit& unit)
+//return a vector that allows us to path directly to the enemy cat or an enemy defender next to the cat, depending on which is the shortest path
 {
-	std::vector<Tile> nodes_to_try;
 	std::vector<Tile> tilesToTry;
-	tilesToTry.push_back(player->opponent->cat->tile);
-	Tile Ntile = player->opponent->cat->tile->tile_north;
-	Tile Stile = player->opponent->cat->tile->tile_south;
-	Tile Etile = player->opponent->cat->tile->tile_east;
-	Tile Wtile = player->opponent->cat->tile->tile_west;
-	bool ourNUnit = false;
-	bool ourSUnit = false;
-	bool ourEUnit = false;
-	bool ourWUnit = false;
-	for (auto q : player->units) {
-		if ((Ntile != NULL) && (q == Ntile->unit)) {
-			ourNUnit = true;
-		}
-		if ((Stile != NULL) && (q == Stile->unit)) {
-			ourSUnit = true;
-		}
-		if ((Etile != NULL) && (q == Etile->unit)) {
-			ourEUnit = true;
-		}
-		if ((Wtile != NULL) && (q == Wtile->unit)) {
-			ourWUnit = true;
+	bool ourUnit;
+	std::vector<Tile> validTiles = get_valid_tiles_around_enemy_cat(); //validTiles will be a vector of all the tiles around the enemy cat that are actually real tiles in the game (since the cat could be on a corner not all adjacent tiles are valid)
+	for(auto q : validTiles){
+		if (q->unit != NULL) { // could have done a Null check here and negated the need for get_valid_tile_around_enemy_cat but I think it was important to show for demonstration sake
+			for(auto j : player->units) {
+				if(q->unit == j) {
+					ourUnit = true;
+				}
+			}
+			if(!ourUnit) {
+				Tile temp = q;
+				tilesToTry.push_back(temp);
+			}
 		}
 	}
-	if ((Ntile != NULL) && (!ourNUnit) && (Ntile->unit != NULL)) {
-		tilesToTry.push_back(player->opponent->cat->tile->tile_north);
-	}
-	if ((Stile != NULL) && (!ourSUnit) && (Stile->unit != NULL)) {
-		tilesToTry.push_back(player->opponent->cat->tile->tile_south);
-	}
-	if ((Etile != NULL) && (!ourEUnit) && (Etile->unit != NULL)) {
-		tilesToTry.push_back(player->opponent->cat->tile->tile_east);
-	}
-	if ((Wtile != NULL) && (!ourWUnit) && (Wtile->unit != NULL)) {
-		tilesToTry.push_back(player->opponent->cat->tile->tile_west);
-	}
-	for (auto q : tilesToTry) {
-		Tile temp = q;
-		nodes_to_try.push_back(temp);
-	}
-
-	return find_closest_helper(nodes_to_try, unit);
+	Tile temp = player->opponent->cat->tile;
+	tilesToTry.push_back(temp); //consider pathing straight to the cat if there isn't an enemy that is closer
+	return find_closest_helper(tilesToTry, unit);
 }
 
 std::vector<Tile> AI::find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit)
@@ -576,6 +553,29 @@ bool AI::choose_job(Unit& unit)
 	return false;
 }
 
+std::vector<Tile> AI::get_valid_tiles_around_enemy_cat()
+//return a vector of valid tiles around the enemy cat (since the cat may be in a corner meaning that some adjacent tiles may be invalid)
+{
+	std::vector<Tile> validTiles;
+	Tile NTile = player->opponent->cat->tile->tile_north;
+	Tile STile = player->opponent->cat->tile->tile_south;
+	Tile ETile = player->opponent->cat->tile->tile_east;
+	Tile WTile = player->opponent->cat->tile->tile_west;
+	if(NTile != NULL) {
+		validTiles.push_back(NTile);
+	}
+	if(STile != NULL) {
+		validTiles.push_back(STile);
+	}
+	if(ETile != NULL) {
+		validTiles.push_back(ETile);
+	}
+	if(WTile != NULL) {
+		validTiles.push_back(WTile);
+	}
+	return validTiles;
+}
+
 bool AI::move_to_shelter_to_rest(Unit& unit)
 //have the unit move to the nearest shelter, and if we make it then rest
 {
@@ -610,7 +610,7 @@ bool AI::converter_turn(Unit& unit)
 	}
 
 	//energy higher than 75 so lets try to convert a enemy
-	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(unit);
+	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(unit); 
 	if (closestNeutralHuman.empty()) { //no neutral enemies to convert, so lets follow a soilder instead
 		std::vector<Tile> soldierToFollow = find_closest_soldier(unit);
 		if (soldierToFollow.size() == 1) {
@@ -873,7 +873,7 @@ bool AI::defender_turn(Unit& unit)
 bool AI::death_squad_turn(Unit& unit)
 {
 	if ((unit->job->title == "soldier") && (unit->energy > 25))  {
-		auto path_to_enemy_cat = find_enemy_cat(unit);
+		auto path_to_enemy_cat = find_enemy_cat_or_enemy_defender(unit);
 
 		if (path_to_enemy_cat.size() == 0) { //cat is blocked off
 			std::vector<Tile> closestEnemy = find_closest_enemy(unit); //try to find an enemy
@@ -894,7 +894,7 @@ bool AI::death_squad_turn(Unit& unit)
 		} else {
 			while(path_to_enemy_cat.size() > 1 && unit->moves > 0) { //move to cat
 				mover(unit, path_to_enemy_cat);
-				path_to_enemy_cat = find_enemy_cat(unit);
+				path_to_enemy_cat = find_enemy_cat_or_enemy_defender(unit);
 			}
 			if (path_to_enemy_cat.size() == 1) { //next to cat, attack!
 				unit->attack(game->get_tile_at(path_to_enemy_cat[0]->x, path_to_enemy_cat[0]->y));
