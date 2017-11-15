@@ -14,6 +14,7 @@ accomplished. Enjoy!
 ### How to Run
 
 `make`
+
 `./testRun MyOwnGameSession`
 
 Note: testRun probably won't work without modifications and a different host.
