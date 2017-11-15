@@ -424,25 +424,25 @@ std::vector<Tile> AI::find_closest_enemy_defender(const Unit& unit)
 std::vector<Tile> AI::find_enemy_cat_or_enemy_defender(const Unit& unit)
 //return a vector that allows us to path directly to the enemy cat or an enemy defender next to the cat, depending on which is the shortest path
 {
-	std::vector<Tile> tilesToTry;
-	bool ourUnit;
-	std::vector<Tile> validTiles = get_valid_tiles_around_enemy_cat(); //validTiles will be a vector of all the tiles around the enemy cat that are actually real tiles in the game (since the cat could be on a corner not all adjacent tiles are valid)
-	for(auto q : validTiles){
+	std::vector<Tile> tiles_to_try;
+	bool our_unit;
+	std::vector<Tile> valid_tiles = get_valid_tiles_around_enemy_cat(); //validTiles will be a vector of all the tiles around the enemy cat that are actually real tiles in the game (since the cat could be on a corner not all adjacent tiles are valid)
+	for(auto q : valid_tiles){
 		if (q->unit != NULL) { // could have done a Null check here and negated the need for get_valid_tile_around_enemy_cat but I think it was important to show for demonstration sake
 			for(auto j : player->units) {
 				if(q->unit == j) {
-					ourUnit = true;
+					our_unit = true;
 				}
 			}
-			if(!ourUnit) {
+			if(!our_unit) {
 				Tile temp = q;
-				tilesToTry.push_back(temp);
+				tiles_to_try.push_back(temp);
 			}
 		}
 	}
 	Tile temp = player->opponent->cat->tile;
-	tilesToTry.push_back(temp); //consider pathing straight to the cat if there isn't an enemy that is closer
-	return find_closest_helper(tilesToTry, unit);
+	tiles_to_try.push_back(temp); //consider pathing straight to the cat if there isn't an enemy that is closer
+	return find_closest_helper(tiles_to_try, unit);
 }
 
 std::vector<Tile> AI::find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit)
@@ -556,24 +556,24 @@ bool AI::choose_job(Unit& unit)
 std::vector<Tile> AI::get_valid_tiles_around_enemy_cat()
 //return a vector of valid tiles around the enemy cat (since the cat may be in a corner meaning that some adjacent tiles may be invalid)
 {
-	std::vector<Tile> validTiles;
-	Tile NTile = player->opponent->cat->tile->tile_north;
-	Tile STile = player->opponent->cat->tile->tile_south;
-	Tile ETile = player->opponent->cat->tile->tile_east;
-	Tile WTile = player->opponent->cat->tile->tile_west;
-	if(NTile != NULL) {
-		validTiles.push_back(NTile);
+	std::vector<Tile> valid_tiles;
+	Tile n_tile = player->opponent->cat->tile->tile_north;
+	Tile s_tile = player->opponent->cat->tile->tile_south;
+	Tile e_tile = player->opponent->cat->tile->tile_east;
+	Tile w_tile = player->opponent->cat->tile->tile_west;
+	if(n_tile != NULL) {
+		valid_tiles.push_back(n_tile);
 	}
-	if(STile != NULL) {
-		validTiles.push_back(STile);
+	if(s_tile != NULL) {
+		valid_tiles.push_back(s_tile);
 	}
-	if(ETile != NULL) {
-		validTiles.push_back(ETile);
+	if(e_tile != NULL) {
+		valid_tiles.push_back(e_tile);
 	}
-	if(WTile != NULL) {
-		validTiles.push_back(WTile);
+	if(w_tile != NULL) {
+		valid_tiles.push_back(w_tile);
 	}
-	return validTiles;
+	return valid_tiles;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -588,20 +588,20 @@ std::vector<Tile> AI::get_valid_tiles_around_enemy_cat()
 bool AI::move_to_shelter_to_rest(Unit& unit)
 //have the unit move to the nearest shelter, and if we make it then rest
 {
-	std::vector<Tile> closestShelter = find_closest_shelter(unit);
-	if (closestShelter.size() == 0) {//error, we dont have a shelter lets move to the cat instead
-		closestShelter = find_path(unit->tile, player->cat->tile);
+	std::vector<Tile> closest_shelter = find_closest_shelter(unit);
+	if (closest_shelter.size() == 0) {//error, we dont have a shelter lets move to the cat instead
+		closest_shelter = find_path(unit->tile, player->cat->tile);
 		return false; //this is an error and shows that we have no shelter, the code will continue to work though
 	}
-	if (closestShelter.size() == 1) {//we are adjacent a shelter so lets rest
+	if (closest_shelter.size() == 1) {//we are adjacent a shelter so lets rest
 		unit->rest();
 		return true;
 	} else {//we haven't reached the shelter, lets move towards it
-		while((closestShelter.size() > 1) && (unit->moves > 0)) {
-			mover(unit, closestShelter);
-			closestShelter = find_closest_shelter(unit);
+		while((closest_shelter.size() > 1) && (unit->moves > 0)) {
+			mover(unit, closest_shelter);
+			closest_shelter = find_closest_shelter(unit);
 		}
-		if (closestShelter.size() == 1) {//if we reach the shelter this turn then go ahead and rest
+		if (closest_shelter.size() == 1) {//if we reach the shelter this turn then go ahead and rest
 			unit->rest();
 		}
 		return true;
@@ -752,6 +752,27 @@ bool AI::hunt_for_materials(Unit& unit, std::string type)
 	}
 }
 
+bool AI::move_to_full_deposit_and_make_structure(Unit& unit)
+//move to a tile within 15(this was a randomly picked value) moves that is ready to have a shelter on it
+{
+	std::vector<Tile> closest_full_material_deposit = find_full_deposit(unit);
+	if(closest_full_material_deposit.empty()) {
+		return false; //error, we already checked for this, something unexpected happened in the game
+	}
+	while(closest_full_material_deposit.size() > 1 && unit->moves > 0) { //move to deposit
+		mover(unit, closest_full_material_deposit);
+		closest_full_material_deposit = find_full_deposit(unit);
+	}
+	if (closest_full_material_deposit.size() == 1) { //where we wanna construct
+		if (unit->energy >= 75.0) { //construct
+			unit->construct(game->get_tile_at(closest_full_material_deposit[0]->x, closest_full_material_deposit[0]->y), "shelter");
+			unit->rest();
+			return true;
+		}
+	} //moved as close as we could
+	return true;//moved as close as we could
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Turn Functions:
 //These function calls specifiy the actions of the various jobs(or classes) and are called on the units each turn
@@ -823,22 +844,8 @@ bool AI::builder_turn(Unit& unit)
 {
 	std::vector<Tile> closest_full_material_deposit = find_full_deposit(unit);
 	//if there is a full material deposit within 15 moves and we have the energy automatically go and construct a shelter
-	if ((unit->energy >= 75.0) && (!closest_full_material_deposit.empty())) {
-		if ((closest_full_material_deposit.size() < 15) && (unit->energy >= 75.0)) { //build!
-			while(closest_full_material_deposit.size() > 1 && unit->moves > 0) { //move to deposit
-				mover(unit, closest_full_material_deposit);
-				closest_full_material_deposit = find_full_deposit(unit);
-			}
-			if (closest_full_material_deposit.size() == 1) { //where we wanna construct
-				if (unit->energy >= 75.0) { //construct
-					unit->construct(game->get_tile_at(closest_full_material_deposit[0]->x, closest_full_material_deposit[0]->y), "shelter");
-					unit->rest();
-					return true;
-				}
-			} else { //wait till next turn to construct
-				return true;
-			}
-		}
+	if ((unit->energy >= 75.0) && (!closest_full_material_deposit.empty()) && (closest_full_material_deposit.size() < 15)) {
+		return move_to_full_deposit_and_make_structure(unit);
 	}
 	//if inventory is full go to closest tile with materials
 	if (unit->materials >= unit->job->carry_limit) {
@@ -923,18 +930,18 @@ bool AI::death_squad_turn(Unit& unit)
 		auto path_to_enemy_cat = find_enemy_cat_or_enemy_defender(unit);
 
 		if (path_to_enemy_cat.size() == 0) { //cat is blocked off
-			std::vector<Tile> closestEnemy = find_closest_enemy(unit); //try to find an enemy
+			std::vector<Tile> closest_enemy = find_closest_enemy(unit); //try to find an enemy
 
-			if (closestEnemy.empty()) {
+			if (closest_enemy.empty()) {
 				std::cout << "error no enemy, death_squad turn" << endl;
 				return false; // no enemy so what do you want to do?
 			} else {
-				while ((closestEnemy.size()) > 1 && (unit->moves > 0)) {
-					mover(unit, closestEnemy); //mobilize to attack!
-					closestEnemy = find_closest_enemy(unit);
+				while ((closest_enemy.size()) > 1 && (unit->moves > 0)) {
+					mover(unit, closest_enemy); //mobilize to attack!
+					closest_enemy = find_closest_enemy(unit);
 				}
-				if (closestEnemy.size() == 1) { //attack!
-					unit->attack(closestEnemy[0]);
+				if (closest_enemy.size() == 1) { //attack!
+					unit->attack(closest_enemy[0]);
 				}
 				return true;
 			}
