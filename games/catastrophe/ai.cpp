@@ -576,12 +576,22 @@ std::vector<Tile> AI::get_valid_tiles_around_enemy_cat()
 	return validTiles;
 }
 
+////////////////////////////////////////////////////////////////////
+//Unit Functions:
+//These function calls are used by various units during their turns
+////////////////////////////////////////////////////////////////////
+
+//////////////////
+//Misc Unit calls
+//////////////////
+
 bool AI::move_to_shelter_to_rest(Unit& unit)
 //have the unit move to the nearest shelter, and if we make it then rest
 {
 	std::vector<Tile> closestShelter = find_closest_shelter(unit);
 	if (closestShelter.size() == 0) {//error, we dont have a shelter lets move to the cat instead
 		closestShelter = find_path(unit->tile, player->cat->tile);
+		return false; //this is an error and shows that we have no shelter, the code will continue to work though
 	}
 	if (closestShelter.size() == 1) {//we are adjacent a shelter so lets rest
 		unit->rest();
@@ -598,75 +608,116 @@ bool AI::move_to_shelter_to_rest(Unit& unit)
 	}
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////
+//Converter Unit calls
+///////////////////////
+
+bool AI::convert_neutral_human(Unit& unit)
+//Try to find a neutral human on the map to convert, if there is one move towards it then convert
+{
+	std::vector<Tile> path_to_closest_neutral_human = find_closest_neutral_human(unit);
+	if(path_to_closest_neutral_human.size() == 0) {//no neutral humans on the board, the converter should follow a soldier iinstead
+		return false;
+	}
+	while((path_to_closest_neutral_human.size() > 1) && (unit->moves > 0)) { //move towards the neutral human
+		mover(unit, path_to_closest_neutral_human);
+		path_to_closest_neutral_human = find_closest_neutral_human(unit); //re-calculate the list each time
+	}
+	if (path_to_closest_neutral_human.size() == 1) { //we are adjacent to the neutral human so try to convert it
+		unit->convert(path_to_closest_neutral_human[0]);
+		Unit temp = game->get_tile_at(path_to_closest_neutral_human[0]->x, path_to_closest_neutral_human[0]->y)->unit; //get the new unit
+		fresh_turn(temp); //game documentation isn't clear if neutral humans can move on the turn they are converted, so we try it here, otherwise the new human will move next turn
+		return move_to_shelter_to_rest(unit);
+	}
+	return true; //we moved as close as we could to the neutral human, but didn't reach it this turn
+}
+
+bool AI::follow_a_soldier(Unit& unit)
+//Attempt to follow a soldier, in the hopes that the soldier kills a unit so we can convert it
+{
+	std::vector<Tile> path_to_soldier = find_closest_soldier(unit);
+	if (path_to_soldier.size() == 0) {
+		return false; //no soldiers on the board
+	}
+	if ((path_to_soldier.size() > 1) && (unit->moves > 0)) { //move towards soldier
+		while((path_to_soldier.size() > 1) && (unit->moves > 0)) {
+			mover(unit, path_to_soldier);
+			path_to_soldier = find_closest_soldier(unit);
+		}
+	}
+	return true; //at soilder, or moved as far as possible
+}
+
+/////////////////////////
+//Soldier Unit calls
+/////////////////////////
+
+bool AI::hunt_an_enemy(Unit & unit)
+//Move towards and try to attack the closest enemy unit
+{
+	std::vector<Tile> path_to_closest_enemy = find_closest_enemy(unit);
+	if (path_to_closest_enemy.empty()) {
+		return false; //error no enemy on the map, we don't know what to do
+	} else {//move to and attack the closest enemy
+		while((path_to_closest_enemy.size()) > 1 && (unit->moves > 0)) {
+			mover(unit, path_to_closest_enemy);
+			path_to_closest_enemy = find_closest_enemy(unit);
+		}
+		if (path_to_closest_enemy.size() == 1) {
+			unit->attack(path_to_closest_enemy[0]);
+		}
+	}
+	return true; //attacked closest enemy or walked as far as we could towards him
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //Turn Functions:
-//These function calls specifiy the actions of the various jobs(or classes) of the units
-/////////////////////////////////////////////////////////////////////////////////////////
+//These function calls specifiy the actions of the various jobs(or classes) and are called on the units each turn
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 bool AI::converter_turn(Unit& unit)
+//Called each time a converter unit takes it's turn
 {
 	if (unit->energy < 75.0) { //not enough energy so try to rest by moving to a rest point
 		return move_to_shelter_to_rest(unit);
 	}
 
-	//energy higher than 75 so lets try to convert a enemy
-	std::vector<Tile> closestNeutralHuman = find_closest_neutral_human(unit); 
-	if (closestNeutralHuman.empty()) { //no neutral enemies to convert, so lets follow a soilder instead
-		std::vector<Tile> soldierToFollow = find_closest_soldier(unit);
-		if (soldierToFollow.size() == 1) {
-			return true; //already at soldier
-		}
-		if ((soldierToFollow.size() > 1) && (unit->moves > 0)) { //move towards soldier
-			while((soldierToFollow.size() > 1) && (unit->moves > 0)) {
-				mover(unit, soldierToFollow);
-				soldierToFollow = find_closest_soldier(unit);
-			}
-			return true; //at soilder, or moved as far as possible
+	//energy higher than 75 so lets try to convert a neutral human
+	if(convert_neutral_human(unit)) { //try to convert neutral human
+		return true;//we converted a neutral human or are currently heading towards one
+	} else {
+		if(follow_a_soldier(unit)) { //try to follow a soldier since we dont have a neutral human to convert
+			return true; //follwed a soldier
 		} else {
-			return false; //error no soldier so what do we want to do?
+			return false; //No soldier's on the board, what do we want our converter to do instead?
 		}
-	} else { //neutral enemy to convert
-		while((closestNeutralHuman.size() > 1) && (unit->moves > 0)) { //move to the neutral humans
-			mover(unit, closestNeutralHuman);
-			closestNeutralHuman = find_closest_neutral_human(unit);
-		}
-		if (closestNeutralHuman.size() == 1) {
-			unit->convert(closestNeutralHuman[0]);
-			Unit temp = game->get_tile_at(closestNeutralHuman[0]->x, closestNeutralHuman[0]->y)->unit;
-			fresh_turn(temp);
-		}
-		//converted an enemy so lets head towards a restpoint
-		return move_to_shelter_to_rest(unit);
 	}
-	return false; //error something went wrong the turn couldn't finish
 }
 
 bool AI::soldier_turn(Unit& unit)
+//Called each time a soldier unit take their turn if they are not specified to be a defender
 {
 	if (unit->energy <= 25.0) {//not enough energy so lets go rest
-		move_to_shelter_to_rest(unit);
+		return move_to_shelter_to_rest(unit);
 	} else {//if we aren't in danger and already resting lets not stop until we are healed
-		std::vector<Tile> closestStructure = find_closest_shelter(unit);
-		if (closestStructure.size() == 1 && unit->energy < 100.0) {
-			std::vector<Tile> closestEnemy = find_closest_enemy(unit);
-			if ((closestEnemy.size() != 0 && closestEnemy.size() > 2) || unit->energy <= 75) { //if we aren't in danger or if the unit energy is too low to do anything anyway then rest
+		std::vector<Tile> closest_shelter = find_closest_shelter(unit);
+		if (closest_shelter.size() == 1 && unit->energy < 100.0) { //we are next to a shelter but not fully healed
+			std::vector<Tile> closest_enemy = find_closest_enemy(unit);
+			if(closest_enemy.empty()) { //no enemy on the board lets finish healing
+				unit->rest();
+				return true;
+			}
+			if ((closest_enemy.size() > 2) || (unit->energy <= 75)) { //if we aren't in immediate danger or if the unit energy is too low to do anything anyway then rest
 				unit->rest();
 				return true;
 			}
 		}
-		//have energy or we are in danger lets hunt for a enemy
-		std::vector<Tile> closestEnemy = find_closest_enemy(unit);
-		if (closestEnemy.empty()) {
-			return false; //error no enemy on the map, we don't know what to do
-		} else {//move to and attack the closest enemy
-			while((closestEnemy.size()) > 1 && (unit->moves > 0)) {
-				mover(unit, closestEnemy);
-				closestEnemy = find_closest_enemy(unit);
-			}
-			if (closestEnemy.size() == 1) {
-				unit->attack(closestEnemy[0]);
-			}
+		//have full energy or we are in danger with enough energy to atleast attack so lets go attack the closest enemy
+		if(hunt_an_enemy(unit)) {
 			return true;
+		}
+		else {
+			return false; // no enemy to hunt, we need logic to handle this (in hindsight with sleep why didnt we just go attack thier cat in these cases....)
 		}
 	}
 	return false; // error the turn was not able to finish
@@ -675,9 +726,6 @@ bool AI::soldier_turn(Unit& unit)
 bool AI::gatherer_turn(Unit& unit)
 {
 	//if storage is full or energy is low return and deposit food
-	int temp = unit->food;
-	std::cout << "Carrying " << temp << endl;
-
 	if ((unit->food >= unit->job->carry_limit) || (unit->energy < 75.0)) { //going to return food or sleep
 		std::vector<Tile> closestShelter = find_closest_shelter(unit);
 		while((closestShelter.size() > 1) && (unit->moves > 0)) {

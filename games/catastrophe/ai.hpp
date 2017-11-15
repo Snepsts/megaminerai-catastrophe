@@ -94,12 +94,15 @@ public:
 	std::vector<Tile> find_closest_food(const Unit& unit);
 
 	//soldier code
+	bool hunt_an_enemy(Unit & unit);
 	bool soldier_turn(Unit& unit);
 	std::vector<Tile> find_closest_enemy(const Unit& unit);
 	bool defender_turn(Unit& unit); //to counter zerg rushes
 	std::vector<Tile> find_closest_enemy_defender(const Unit& unit);
 
 	//missionary code
+	bool follow_a_soldier(Unit& unit);
+	bool convert_neutral_human(Unit& unit);
 	bool converter_turn(Unit& unit);
 	std::vector<Tile> find_closest_neutral_human(const Unit& unit);
 	std::vector<Tile> find_closest_soldier(const Unit& unit);
