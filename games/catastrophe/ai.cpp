@@ -428,7 +428,7 @@ std::vector<Tile> AI::find_enemy_cat_or_enemy_defender(const Unit& unit)
 	bool our_unit;
 	std::vector<Tile> valid_tiles = get_valid_tiles_around_enemy_cat(); //validTiles will be a vector of all the tiles around the enemy cat that are actually real tiles in the game (since the cat could be on a corner not all adjacent tiles are valid)
 	for(auto q : valid_tiles){
-		if (q->unit != NULL) { // could have done a Null check here and negated the need for get_valid_tile_around_enemy_cat but I think it was important to show for demonstration sake
+		if (q->unit != NULL) { // could have done a tile Null check here and negated the need for get_valid_tile_around_enemy_cat but I think it was important to show for demonstration sake
 			for(auto j : player->units) {
 				if(q->unit == j) {
 					our_unit = true;
@@ -676,6 +676,7 @@ bool AI::hunt_an_enemy(Unit & unit)
 bool AI::move_to_shelter_and_deposit(Unit& unit, std::string type, bool sleep)
 //Move to the closest shelter and deposit whatever the unit is holding, rest if sleep value is true
 {
+	bool use_empty = false; //need to use find_empty_tile instead of find_closest_deposit because there are no deposits of materials on map
 	std::vector<Tile> closest_deposit_point;
 	if (type == "food") {
 		closest_deposit_point = find_closest_shelter(unit);
@@ -684,12 +685,19 @@ bool AI::move_to_shelter_and_deposit(Unit& unit, std::string type, bool sleep)
 	}
 	if(closest_deposit_point.empty() && type == "food") {
 		closest_deposit_point = find_path(unit->tile, player->cat->tile); //no shelters on the map, to stop the Ai from locking up just path to the cat
-	} else if (closest_deposit_point.empty() && type == "materials"){
+	} else if (closest_deposit_point.empty()){
+		use_empty = true;
 		closest_deposit_point = find_closest_empty_tile(unit); //currently no tile with materials so just use the closest empty one as the deposit point
 	} else {
 		while((closest_deposit_point.size() > 1) && (unit->moves > 0)) {
 			mover(unit, closest_deposit_point);
-			closest_deposit_point = find_closest_shelter(unit);
+			if(type == "food") {
+				closest_deposit_point = find_closest_shelter(unit);
+			} else if(use_empty){ //need to path to a empty tile instead of a tile with materials cause there is no tile with materials
+				closest_deposit_point = find_closest_empty_tile(unit);
+			} else {
+				closest_deposit_point = find_closest_deposit(unit);
+			}
 		}
 		if (closest_deposit_point.size() == 1) { //if we are at the deposit point
 			if(type == "food") {
@@ -850,9 +858,9 @@ bool AI::builder_turn(Unit& unit)
 	//if inventory is full go to closest tile with materials
 	if (unit->materials >= unit->job->carry_limit) {
 		if(unit->energy < 75.0) {
-			return move_to_shelter_and_deposit(unit, "materials");
-		} else {
 			return move_to_shelter_and_deposit(unit, "materials", true);
+		} else { //dont need to rest just deposit
+			return move_to_shelter_and_deposit(unit, "materials");
 		}
 	}
  	//if energy is low go rest
