@@ -13,6 +13,7 @@ This was done in order to use this AI for presentations for new megaminer compet
 ### How to Run
 
 `make`
+
 `./testRun MyOwnGameSession`
 
 Note: testRun probably won't work without modifications and a different host.
