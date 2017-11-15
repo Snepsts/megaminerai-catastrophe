@@ -536,10 +536,11 @@ bool AI::choose_job(Unit& unit)
 	if (missionaries < 1 || missionaries < soldiers / 3) { //one missionary for every 3 soldiers
 		cout << "Choosing missionary" << endl;
 		return unit->change_job("missionary");
-	} else if (enemy_soldier_count+1 > player_soldier_count) { //more soldiers
+	}
+	/*else if (enemy_soldier_count+1 > player_soldier_count) { //more soldiers
 		cout << "They have soldiers choose soldier" << endl;
 		return unit->change_job("soldier");
-	} else if (gatherers < 1) { //need a food source
+	}*/ else if (gatherers < 1) { //need a food source
 		cout << "Choosing gatherer" << endl;
 		return unit->change_job("gatherer");
 	} else if (builders < 1) { //need a shelter builder
@@ -681,49 +682,52 @@ bool AI::move_to_shelter_and_deposit(Unit& unit, std::string type, bool sleep)
 	if (type == "food") {
 		closest_deposit_point = find_closest_shelter(unit);
 	} else {
+		std::cout << " Using find_closest deposit(right)";
 		closest_deposit_point = find_closest_deposit(unit);
 	}
 	if(closest_deposit_point.empty() && type == "food") {
 		closest_deposit_point = find_path(unit->tile, player->cat->tile); //no shelters on the map, to stop the Ai from locking up just path to the cat
 	} else if (closest_deposit_point.empty()){
 		use_empty = true;
+		std::cout << " had to use empty instead";
 		closest_deposit_point = find_closest_empty_tile(unit); //currently no tile with materials so just use the closest empty one as the deposit point
-	} else {
-		while((closest_deposit_point.size() > 1) && (unit->moves > 0)) {
-			mover(unit, closest_deposit_point);
-			if(type == "food") {
-				closest_deposit_point = find_closest_shelter(unit);
-			} else if(use_empty){ //need to path to a empty tile instead of a tile with materials cause there is no tile with materials
-				closest_deposit_point = find_closest_empty_tile(unit);
-			} else {
-				closest_deposit_point = find_closest_deposit(unit);
-			}
-		}
-		if (closest_deposit_point.size() == 1) { //if we are at the deposit point
-			if(type == "food") {
-				std::cout << "Dropping: " << unit->food << " food" << endl;
-				unit->drop(game->get_tile_at(closest_deposit_point[0]->x, closest_deposit_point[0]->y), "food");
-			} else {
-				std::cout << "Dropping: " << unit->materials << " materials" << endl;
-				unit->drop(game->get_tile_at(closest_deposit_point[0]->x, closest_deposit_point[0]->y), "materials");
-				if (game->get_tile_at(closest_deposit_point[0]->x, closest_deposit_point[0]->y)->materials >= 50) { //if we just laid enough materials for a shelter try to build it and rest at it
-					unit->construct(game->get_tile_at(closest_deposit_point[0]->x, closest_deposit_point[0]->y), "shelter");
-					unit->rest(); //we should always rest after constructing so we force it here
-					return true;
-				}
-			}
-			if (sleep) { //rest if we need to
-				if(type == "food") { //if we dropped food off then we are at the shelter
-					unit -> rest();
-					return true;
-				} else { //if we dropped materials off we need to head towards a shelter
-					return move_to_shelter_to_rest(unit);
-				}
-			}
-		}
-		return true; //moved as close as we could
 	}
-	return false; //something went wrong
+	while((closest_deposit_point.size() > 1) && (unit->moves > 0)) {
+		mover(unit, closest_deposit_point);
+		if(type == "food") {
+			closest_deposit_point = find_closest_shelter(unit);
+		} else if(use_empty){ //need to path to a empty tile instead of a tile with materials cause there is no tile with materials
+			std::cout << " still using empty";
+			closest_deposit_point = find_closest_empty_tile(unit);
+		} else {
+			std::cout << " still using deposit";
+			closest_deposit_point = find_closest_deposit(unit);
+		}
+	}
+	if (closest_deposit_point.size() == 1) { //if we are at the deposit point
+		if(type == "food") {
+			std::cout << "Dropping: " << unit->food << " food" << endl;
+			unit->drop(game->get_tile_at(closest_deposit_point[0]->x, closest_deposit_point[0]->y), "food");
+		} else { //dropping materials not food
+			std::cout << " Drop of materials.";
+			std::cout << "Dropping: " << unit->materials << " materials" << endl;
+			unit->drop(game->get_tile_at(closest_deposit_point[0]->x, closest_deposit_point[0]->y), "materials");
+			if (game->get_tile_at(closest_deposit_point[0]->x, closest_deposit_point[0]->y)->materials >= 50) { //if we just laid enough materials for a shelter try to build it and rest at it
+				unit->construct(game->get_tile_at(closest_deposit_point[0]->x, closest_deposit_point[0]->y), "shelter");
+				unit->rest(); //we should always rest after constructing so we force it here
+				return true;
+			}
+		}
+	}
+	if (sleep) { //rest if we need to
+		if(type == "food") { //if we dropped food off then we are at the shelter
+			unit -> rest();
+			return true;
+		} else { //if we dropped materials off we need to head towards a shelter
+			return move_to_shelter_to_rest(unit);
+		}
+	}
+	return true; //moved as close as we could
 }
 
 bool AI::hunt_for_materials(Unit& unit, std::string type)
@@ -752,6 +756,7 @@ bool AI::hunt_for_materials(Unit& unit, std::string type)
 				unit->harvest(temp);
 				return move_to_shelter_and_deposit(unit, "food", true); // if we have moves left, start heading towards shelter to deposit and sleep
 			} else {
+				std::cout << "Deconstructing: ";
 				unit->deconstruct(temp);
 				return move_to_shelter_and_deposit(unit, "materials", true);
 			}
