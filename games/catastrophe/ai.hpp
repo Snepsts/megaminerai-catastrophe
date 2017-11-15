@@ -116,6 +116,8 @@ public:
 	std::vector<Tile> find_enemy_cat_or_enemy_defender(const Unit& unit);
 
 	//helper code or all unit code
+	bool move_to_shelter_and_deposit(Unit& unit, std::string type, bool sleep = false);
+	bool hunt_for_materials(Unit& unit, std::string type);
 	bool death_squad_check();
 	void run_first_turn();
 	std::vector<Tile> get_valid_tiles_around_enemy_cat();
