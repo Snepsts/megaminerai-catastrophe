@@ -84,23 +84,26 @@ public:
 	//builder code
 	bool builder_turn(Unit& unit);
 	std::vector<Tile> shortest_path_to_materials(const Unit& unit);
-	std::vector<Tile> find_closest_structure(Unit& unit);
-	std::vector<Tile> find_closest_empty_tile(Unit& unit);
+	std::vector<Tile> find_closest_structure(const Unit& unit);
+	std::vector<Tile> find_closest_empty_tile(const Unit& unit);
 
 	//gatherer code
 	bool gatherer_turn(Unit& unit);
-	std::vector<Tile> find_full_deposit(Unit& unit);
-	std::vector<Tile> find_closest_deposit(Unit& unit);
+	std::vector<Tile> find_full_deposit(const Unit& unit);
+	std::vector<Tile> find_closest_deposit(const Unit& unit);
 	std::vector<Tile> find_closest_food(const Unit& unit);
 
 	//soldier code
+	bool hunt_an_enemy(Unit & unit);
 	bool soldier_turn(Unit& unit);
 	std::vector<Tile> find_closest_enemy(const Unit& unit);
 	bool defender_turn(Unit& unit); //to counter zerg rushes
-	std::vector<Tile> find_closest_enemy_defender(Unit& unit);
+	std::vector<Tile> find_closest_enemy_defender(const Unit& unit);
 
 	//missionary code
-	bool converter_turn(Unit& converter);
+	bool follow_a_soldier(Unit& unit);
+	bool convert_neutral_human(Unit& unit);
+	bool converter_turn(Unit& unit);
 	std::vector<Tile> find_closest_neutral_human(const Unit& unit);
 	std::vector<Tile> find_closest_soldier(const Unit& unit);
 
@@ -110,12 +113,19 @@ public:
 
 	//death squad code
 	bool death_squad_turn(Unit& unit); //to relentlessly attack the enemy
-	std::vector<Tile> find_enemy_cat(Unit& unit);
+	std::vector<Tile> find_enemy_cat_or_enemy_defender(const Unit& unit);
 
 	//helper code or all unit code
+	bool move_to_full_deposit_and_make_structure(Unit& unit);
+	bool move_to_shelter_and_deposit(Unit& unit, std::string type, bool sleep = false);
+	bool hunt_for_materials(Unit& unit, std::string type);
+	bool death_squad_check();
+	void run_first_turn();
+	std::vector<Tile> get_valid_tiles_around_enemy_cat();
 	std::vector<Tile> find_closest_helper(const std::vector<Tile>& nodes_to_try, const Unit& unit);
 	void mover(Unit& unit, std::vector<Tile> path);
 	std::vector<Tile> find_closest_shelter(const Unit& unit);
+	bool move_to_shelter_to_rest(Unit& unit);
 	bool is_adj_to_cat(const Tile& tile);
 
 /// A very basic path finding algorithm (Breadth First Search) that when given a starting Tile, will return a valid path to the goal Tile.
