@@ -536,11 +536,10 @@ bool AI::choose_job(Unit& unit)
 	if (missionaries < 1 || missionaries < soldiers / 3) { //one missionary for every 3 soldiers
 		cout << "Choosing missionary" << endl;
 		return unit->change_job("missionary");
-	}
-	/*else if (enemy_soldier_count+1 > player_soldier_count) { //more soldiers
+	} else if (enemy_soldier_count+1 > player_soldier_count) { //more soldiers
 		cout << "They have soldiers choose soldier" << endl;
 		return unit->change_job("soldier");
-	}*/ else if (gatherers < 1) { //need a food source
+	} else if (gatherers < 1) { //need a food source
 		cout << "Choosing gatherer" << endl;
 		return unit->change_job("gatherer");
 	} else if (builders < 1) { //need a shelter builder
