@@ -13,6 +13,4 @@ This was done in order to use this AI for presentations for new megaminer compet
 
 `make`
 
-`./testRun MyOwnGameSession`
-
-Note: testRun probably won't work without modifications and a different host.
+`./run -s rusty.bike -r SessionName catastrophe`
